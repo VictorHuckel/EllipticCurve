@@ -49,6 +49,14 @@ cd client
 npm run dev
 ```
 
+
+Si `vite` n'est pas installé, installez-le avec :
+```sh
+cd client
+npm install vite
+```
+
+
 Pour démarrer le serveur Node.js :
 ```sh
 cd server
