@@ -11,3 +11,16 @@ export const getWeierstrassCurve = async (params) => {
         throw error;
     }
 };
+
+export const getEdwardsCurve = async (params) => {
+    console.log("Envoi de la requête :", params);
+    return fetch("http://localhost:5000/api/curves/edwards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+    }).then(async (res) => {
+        const data = await res.json();
+        console.log("Réponse reçue :", data);
+        return data;
+    });
+};

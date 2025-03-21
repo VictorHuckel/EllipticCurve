@@ -24,6 +24,7 @@ const limiter = rateLimit({
 // Application du limiteur à toutes les requêtes entrantes
 app.use(limiter);
 
+
 // Montage des routes pour les courbes sous le chemin /api/curves
 app.use("/api/curves", curveRoutes);
 

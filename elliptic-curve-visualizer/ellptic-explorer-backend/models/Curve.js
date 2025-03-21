@@ -30,5 +30,16 @@ class Edwards {
         return this.c * x * x + y * y - 1 - this.d * x * x * y * y;
     }
 }
+class TwistedEdwards {
+    constructor(a, d) {
+        this.a = a;
+        this.d = d;
+    }
 
-module.exports = { Weierstrass, Montgomery, Edwards };
+    evaluate(x, y) {
+        return this.a * x * x + y * y - 1 - this.d * x * x * y * y;
+    }
+}
+
+module.exports = { Weierstrass, Montgomery, Edwards, TwistedEdwards };
+
