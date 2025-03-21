@@ -16,25 +16,39 @@ router.post(
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
+
+        const { a, b } = req.body;
+        if (4 * Math.pow(a, 3) + 27 * Math.pow(b, 2) === 0) {
+            return res.status(400).json({ error: "La courbe est singulière (4a^3 + 27b^2 ≠ 0)." });
+        }
+
         calculateWeierstrass(req, res);
     }
 );
 
+
 router.post(
-    "/montgomery",
+    "/weierstrass",
     [
         body("A").isNumeric().withMessage("Le coefficient 'A' doit être un nombre"),
         body("B").isNumeric().withMessage("Le coefficient 'B' doit être un nombre"),
-        body("x").isNumeric().withMessage("La valeur 'x' doit être un nombre")
+        body("X").isNumeric().withMessage("La valeur 'X' doit être un nombre")
     ],
     (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-        calculateMontgomery(req, res);
+
+        const { A, B } = req.body;
+        if (4 * Math.pow(A, 3) + 27 * Math.pow(B, 2) === 0) {
+            return res.status(400).json({ error: "La courbe est singulière (4a^3 + 27b^2 ≠ 0)." });
+        }
+
+        calculateWeierstrass(req, res);
     }
 );
+
 
 router.post(
     "/edwards",

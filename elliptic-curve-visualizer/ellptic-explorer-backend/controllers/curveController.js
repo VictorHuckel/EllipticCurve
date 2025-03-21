@@ -12,11 +12,16 @@ exports.calculateWeierstrass = (req, res) => {
     }
 
     try {
+        if (4 * Math.pow(a, 3) + 27 * Math.pow(b, 2) === 0) {
+            throw new Error("La courbe de Weierstrass est singulière.");
+        }
+
         const curve = new Weierstrass(a, b);
         const result = curve.evaluate(x);
         cache.set(cacheKey, result);
         res.json({ result, cached: false });
     } catch (error) {
+        console.error("Erreur dans calculateWeierstrass:", error.message);
         res.status(400).json({ error: error.message });
     }
 };
