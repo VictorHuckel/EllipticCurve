@@ -15,6 +15,8 @@ const curveParameters = ref({});
       class="menu"
       :selectedCurve="selectedCurve"
       :curveParameters="curveParameters"
+      @update:selectedCurve="selectedCurve = $event"
+      @update:curveParameters="curveParameters = $event"
     />
 
     <!-- Affichage du graphique sur le côté droit -->
@@ -44,22 +46,5 @@ const curveParameters = ref({});
   flex: 1;
   padding: 20px;
   background-color: #fff;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
-}
-h1 {
-  text-align: center;
-  margin-bottom: 20px;
 }
 </style>
