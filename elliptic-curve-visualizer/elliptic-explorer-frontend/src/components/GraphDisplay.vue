@@ -1,53 +1,62 @@
 <script setup>
-import { ref, onMounted } from "vue"; // Importation des fonctionnalités réactives et du cycle de vie
+import { ref, watch, onMounted } from "vue"; // Importation des fonctionnalités réactives et du cycle de vie
 import axios from "axios"; // Importation d'axios pour effectuer les requêtes HTTP
 
-// Déclaration des variables réactives pour stocker les coefficients et les résultats
-const a = ref("");
-const b = ref("");
-const x = ref("");
+// Props pour recevoir le type de courbe et les coefficients
+defineProps({
+  selectedCurve: {
+    type: String,
+    required: true,
+  },
+  curveParameters: {
+    type: Object,
+    required: true,
+  },
+});
+
+// Variables réactives pour gérer les erreurs et les résultats
 const errorMessage = ref("");
 const result = ref(null);
 const cached = ref(false);
 let calculator = null; // Référence à l'instance du calculateur (Desmos)
 
-// Fonction de validation des coefficients et de x
-const validateWeierstrass = () => {
-  const aNum = parseFloat(a.value);
-  const bNum = parseFloat(b.value);
-  const xNum = parseFloat(x.value);
+// Fonction de validation des coefficients
+const validateParameters = () => {
+  if (!selectedCurve) {
+    errorMessage.value = "Veuillez sélectionner une courbe.";
+    return false;
+  }
 
-  // Vérifie que tous les champs sont des nombres
-  if (isNaN(aNum) || isNaN(bNum) || isNaN(xNum)) {
-    errorMessage.value = "Tous les coefficients doivent être des nombres.";
+  if (!curveParameters || Object.keys(curveParameters).length === 0) {
+    errorMessage.value = "Veuillez entrer les paramètres de la courbe.";
     return false;
   }
-  // Vérifie la condition de non-singularité de la courbe : 4a³ + 27b² ≠ 0
-  if (4 * Math.pow(aNum, 3) + 27 * Math.pow(bNum, 2) === 0) {
-    errorMessage.value = "La courbe est singulière (4a³ + 27b² ≠ 0).";
-    return false;
+
+  for (const key in curveParameters) {
+    if (isNaN(parseFloat(curveParameters[key]))) {
+      errorMessage.value = `Le paramètre ${key} doit être un nombre.`;
+      return false;
+    }
   }
+
   errorMessage.value = "";
   return true;
 };
 
-// Fonction pour envoyer la requête au backend et récupérer le résultat du calcul
+// Fonction pour envoyer une requête au backend et récupérer le résultat
 const sendRequest = async () => {
-  if (!validateWeierstrass()) {
+  if (!validateParameters()) {
     return;
   }
 
   try {
-    // Envoi d'une requête POST avec les valeurs converties en nombres
-    const response = await axios.post("http://localhost:5000/api/curves/weierstrass", {
-      a: parseFloat(a.value),
-      b: parseFloat(b.value),
-      x: parseFloat(x.value),
-    });
+    // Envoi d'une requête POST au backend avec les paramètres de la courbe
+    const response = await axios.post(`http://localhost:5000/api/curves/${selectedCurve.toLowerCase()}`, curveParameters);
 
-    // Stockage du résultat retourné par le backend et de l'information de cache
+    // Stockage du résultat retourné par le backend
     result.value = response.data.result;
     cached.value = response.data.cached;
+
     // Mise à jour du graphique avec le nouveau résultat
     updateGraph();
   } catch (error) {
@@ -57,22 +66,49 @@ const sendRequest = async () => {
 
 // Fonction pour mettre à jour l'affichage graphique avec Desmos
 const updateGraph = () => {
-  if (!calculator || !result.value) return;
+  if (!selectedCurve || !calculator) {
+    errorMessage.value = "Veuillez sélectionner une courbe.";
+    return;
+  }
 
-  // Mise à jour de l'expression de la courbe
-  calculator.setExpression({
-    id: "curve",
-    latex: `y^2 = x^3 + ${a.value}x + ${b.value}`,
-    color: "blue",
-  });
+  // Mise à jour de l'expression de la courbe en fonction du type sélectionné
+  switch (selectedCurve) {
+    case "Short Weierstrass":
+      calculator.setExpression({
+        id: "curve",
+        latex: `y^2 = x^3 + ${curveParameters.a}x + ${curveParameters.b}`,
+        color: "blue",
+      });
+      break;
 
-  // Affichage du point calculé sur la courbe
-  calculator.setExpression({
-    id: "point",
-    latex: `(${x.value}, ${result.value})`,
-    color: "red",
-    pointStyle: "POINT",
-  });
+    case "Weierstrass":
+      calculator.setExpression({
+        id: "curve",
+        latex: `y^2 + ${curveParameters.a1}xy + ${curveParameters.a3}y = x^3 + ${curveParameters.a2}x^2 + ${curveParameters.a4}x + ${curveParameters.a6}`,
+        color: "blue",
+      });
+      break;
+
+    case "Montgomery":
+      calculator.setExpression({
+        id: "curve",
+        latex: `${curveParameters.B}y^2 = x^3 + ${curveParameters.A}x^2 + x`,
+        color: "blue",
+      });
+      break;
+
+    case "Edwards":
+      calculator.setExpression({
+        id: "curve",
+        latex: `${curveParameters.c}x^2 + y^2 = 1 + ${curveParameters.d}x^2y^2`,
+        color: "blue",
+      });
+      break;
+
+    default:
+      errorMessage.value = "Type de courbe non pris en charge.";
+      return;
+  }
 };
 
 // Chargement dynamique de la librairie Desmos lorsque le composant est monté
@@ -92,36 +128,39 @@ onMounted(() => {
   };
   document.head.appendChild(script);
 });
+
+// Surveille les changements dans les props pour mettre à jour le graphique
+watch([selectedCurve, curveParameters], () => {
+  if (selectedCurve && Object.keys(curveParameters).length > 0) {
+    sendRequest();
+  } else {
+    errorMessage.value = "Veuillez sélectionner une courbe et entrer les paramètres.";
+  }
+});
 </script>
 
 <template>
   <div>
     <!-- Titre du composant -->
-    <h2>Calcul de courbe de Weierstrass</h2>
-    
-    <!-- Champs de saisie pour les coefficients a et b -->
-    <label>Coefficient a :</label>
-    <input v-model="a" type="number" step="any" />
-
-    <label>Coefficient b :</label>
-    <input v-model="b" type="number" step="any" />
-
-    <!-- Champ de saisie pour la valeur x -->
-    <label>Valeur x :</label>
-    <input v-model="x" type="number" step="any" />
-
-    <!-- Bouton pour lancer le calcul de la courbe -->
-    <button @click="sendRequest">Calculer</button>
+    <h2>Affichage du graphique</h2>
 
     <!-- Affichage du message d'erreur en cas de problème -->
     <p v-if="errorMessage" style="color: red;">{{ errorMessage }}</p>
 
-    <!-- Affichage du résultat si celui-ci est disponible, avec indication de cache si applicable -->
+    <!-- Zone pour afficher le graphique -->
+    <div id="calculator" style="width: 100%; height: 500px; border: 1px solid #ddd;"></div>
+
+    <!-- Affichage du résultat si celui-ci est disponible -->
     <p v-if="result !== null">
       Résultat : y = {{ result }} <span v-if="cached">(mis en cache)</span>
     </p>
-
-    <!-- Zone où le calculateur graphique Desmos va afficher la courbe -->
-    <div id="calculator" style="width: 600px; height: 400px;"></div>
   </div>
 </template>
+
+<style scoped>
+#calculator {
+  margin-top: 20px;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+</style>

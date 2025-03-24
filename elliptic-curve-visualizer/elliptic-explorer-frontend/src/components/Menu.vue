@@ -31,7 +31,10 @@
           v-model="curveParameters[key]"
           :placeholder="param.placeholder"
         />
+        <p v-if="!curveParameters[key]" style="color: red;">Ce champ est requis.</p>
       </div>
+
+      <button @click="validateAndEmit">Valider</button>
     </div>
   </div>
 </template>
@@ -92,9 +95,41 @@ export default {
   },
   methods: {
     selectCurve(curveName) {
-      this.$emit("update:selectedCurve", curveName);
-      this.$emit("update:curveParameters", {}); // Réinitialise les paramètres
+      if (this.selectedCurve !== curveName) {
+        this.$emit("update:selectedCurve", curveName);
+        this.$emit("update:curveParameters", this.getDefaultParameters(curveName));
+      }
     },
+    validateParameters() {
+      for (const key in this.curves[this.selectedCurve].parameters) {
+        if (isNaN(parseFloat(this.curveParameters[key]))) {
+          alert(`Le paramètre ${key} doit être un nombre valide.`);
+          return false;
+        }
+      }
+      return true;
+    },
+    validateAndEmit() {
+      if (this.validateParameters()) {
+        this.$emit("update:curveParameters", this.curveParameters);
+      }
+    },
+    getDefaultParameters(curveName) {
+      const parameters = {};
+      const curve = this.curves[curveName];
+      for (const key in curve.parameters) {
+        parameters[key] = 0; // Valeur par défaut pour chaque paramètre
+      }
+      return parameters;
+    },
+  },
+  mounted() {
+    // Définir une courbe par défaut si aucune n'est sélectionnée
+    if (!this.selectedCurve) {
+      const defaultCurve = "Short Weierstrass";
+      this.$emit("update:selectedCurve", defaultCurve);
+      this.$emit("update:curveParameters", this.getDefaultParameters(defaultCurve));
+    }
   },
 };
 </script>

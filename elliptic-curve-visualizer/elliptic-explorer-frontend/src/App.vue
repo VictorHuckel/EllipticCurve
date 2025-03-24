@@ -1,11 +1,17 @@
 <script setup>
-import GraphDisplay from "./components/GraphDisplay.vue";
 import Menu from "./components/Menu.vue";
+import GraphDisplay from "./components/GraphDisplay.vue";
 import { ref } from "vue";
 
-// Stocke le type de courbe sélectionné et ses paramètres
-const selectedCurve = ref(null);
-const curveParameters = ref({});
+// Définir une courbe par défaut
+const selectedCurve = ref("Weierstrass"); // Courbe par défaut
+const curveParameters = ref({
+  a1: 1, // Valeur par défaut pour le coefficient a
+  a2: 1, 
+  a3: 1,
+  a4: 1,
+  a6: 1,
+});
 </script>
 
 <template>
