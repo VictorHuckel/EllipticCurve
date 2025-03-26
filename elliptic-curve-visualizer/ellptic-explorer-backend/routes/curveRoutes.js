@@ -46,8 +46,15 @@ router.post(
 router.post(
     "/edwards",
     validateRequest([
-        body("a").isNumeric().withMessage("Le coefficient 'a' doit être un nombre."),
-        body("d").isNumeric().withMessage("Le coefficient 'd' doit être un nombre."),
+        body("d")
+            .isNumeric()
+            .withMessage("Le coefficient 'd' doit être un nombre.")
+            .custom(value => {
+                if (parseFloat(value) === 1) {
+                    throw new Error("Le coefficient 'd' ne peut pas être égal à 1.");
+                }
+                return true;
+            }),
         body("x").isNumeric().withMessage("La valeur 'x' doit être un nombre.")
     ]),
     (req, res) => calculateEdwards(req, res)
@@ -57,7 +64,7 @@ router.post(
     "/twisted-edwards",
     validateRequest([
         body("a").isNumeric().withMessage("Le coefficient 'a' doit être un nombre."),
-        body("b").isNumeric().withMessage("Le coefficient 'd' doit être un nombre."),
+        body("d").isNumeric().withMessage("Le coefficient 'd' doit être un nombre."),
         body("x").isNumeric().withMessage("La valeur 'x' doit être un nombre.")
     ]),
     (req, res) => calculateTwistedEdwards(req, res) 

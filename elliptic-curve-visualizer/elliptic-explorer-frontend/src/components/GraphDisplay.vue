@@ -3,24 +3,24 @@ import { ref, computed, onMounted } from "vue";
 import axios from "axios";
 
 // Variables réactives
-const curveType = ref("weierstrass"); // Type de courbe sélectionné
+const curveType = ref("weierstrass");
 const a = ref("");
 const b = ref("");
-const c = ref(""); // Utilisé pour certaines courbes
-const d = ref(""); // Idem
+const d = ref(""); // d est utilisé pour Edwards
 const x = ref("");
+const y = ref("");
 const errorMessage = ref("");
 const result = ref(null);
 const cached = ref(false);
 let calculator = null;
 
-// Définition des champs requis en fonction du type de courbe
+// Champs requis selon le type de courbe
 const curveFields = computed(() => {
   switch (curveType.value) {
     case "weierstrass":
       return ["a", "b", "x"];
     case "edwards":
-      return ["a", "d", "x"];
+      return ["d", "x"];
     case "montgomery":
       return ["a", "b", "x"];
     default:
@@ -30,20 +30,28 @@ const curveFields = computed(() => {
 
 // Validation des entrées
 const validateInputs = () => {
-  const aNum = parseFloat(a.value);
-  const bNum = parseFloat(b.value);
-  const cNum = parseFloat(c.value);
-  const dNum = parseFloat(d.value);
   const xNum = parseFloat(x.value);
-
-  if (isNaN(aNum) || isNaN(xNum) || (curveFields.value.includes("b") && isNaN(bNum))) {
-    errorMessage.value = "Tous les coefficients doivent être des nombres.";
+  if (isNaN(xNum)) {
+    errorMessage.value = "x doit être un nombre.";
     return false;
   }
 
-  if (curveType.value === "weierstrass" && 4 * Math.pow(aNum, 3) + 27 * Math.pow(bNum, 2) === 0) {
-    errorMessage.value = "La courbe de Weierstrass est singulière (4a³ + 27b² ≠ 0).";
+  if (curveFields.value.includes("a") && isNaN(parseFloat(a.value))) {
+    errorMessage.value = "a doit être un nombre.";
     return false;
+  }
+
+  if (curveFields.value.includes("b") && isNaN(parseFloat(b.value))) {
+    errorMessage.value = "b doit être un nombre.";
+    return false;
+  }
+
+  if (curveFields.value.includes("d")) {
+    const dNum = parseFloat(d.value);
+    if (isNaN(dNum) || dNum === 1) {
+      errorMessage.value = "d doit être un nombre différent de 1.";
+      return false;
+    }
   }
 
   errorMessage.value = "";
@@ -55,40 +63,67 @@ const sendRequest = async () => {
   if (!validateInputs()) return;
 
   try {
-    const payload = { a: parseFloat(a.value), x: parseFloat(x.value) };
-    if (curveFields.value.includes("b")) payload.b = parseFloat(b.value);
-    if (curveFields.value.includes("c")) payload.c = parseFloat(c.value);
-    if (curveFields.value.includes("d")) payload.d = parseFloat(d.value);
+    const payload = { x: parseFloat(x.value) };
+    if (curveType.value === "edwards") {
+      payload.d = parseFloat(d.value);
+    } else {
+      if (curveFields.value.includes("a")) payload.a = parseFloat(a.value);
+      if (curveFields.value.includes("b")) payload.b = parseFloat(b.value);
+    }
 
     const response = await axios.post(`http://localhost:5000/api/curves/${curveType.value}`, payload);
-
     result.value = response.data.result;
-    cached.value = response.data.cached;
     updateGraph();
   } catch (error) {
     errorMessage.value = error.response?.data?.error || "Erreur inconnue.";
   }
 };
 
-// Mise à jour du graphique
+// Mise à jour du graphique Desmos
 const updateGraph = () => {
-  if (!calculator || !result.value) return;
+  if (!calculator) return;
 
-  let equation = "";
+  calculator.setExpressions([]); // Réinitialiser
+
   switch (curveType.value) {
     case "weierstrass":
-      equation = `y^2 = x^3 + ${a.value}x + ${b.value}`;
+      calculator.setExpression({
+        id: "curve",
+        latex: `y^2 = x^3 + ${a.value}x + ${b.value}`,
+        color: "blue",
+      });
       break;
+
     case "edwards":
-      equation = `${a.value}x^2 + y^2 = 1 + ${d.value}x^2y^2`;
+      calculator.setExpression({
+        id: "edwards_positive",
+        latex: `y=\\sqrt{\\frac{1 - x^2}{1 - ${d.value} * x^2}}`,
+        color: "blue",
+      });
+      calculator.setExpression({
+        id: "edwards_negative",
+        latex: `y=-\\sqrt{\\frac{1 - x^2}{1 - ${d.value} * x^2}}`,
+        color: "blue",
+      });
       break;
+
     case "montgomery":
-      equation = `y^2 = x^3 + ${a.value}x^2 + ${b.value}x`;
+      calculator.setExpression({
+        id: "curve",
+        latex: `y^2 = x^3 + ${a.value}x^2 + ${b.value}x`,
+        color: "blue",
+      });
       break;
   }
 
-  calculator.setExpression({ id: "curve", latex: equation, color: "blue" });
-  calculator.setExpression({ id: "point", latex: `(${x.value}, ${result.value})`, color: "red", pointStyle: "POINT" });
+  if (result.value !== null) {
+    calculator.setExpression({
+      id: "point",
+      latex: `(${x.value}, ${result.value})`,
+      color: "red",
+      pointStyle: "POINT",
+    });
+  }
 };
 
 // Chargement de Desmos
@@ -118,15 +153,12 @@ onMounted(() => {
       <option value="montgomery">Montgomery</option>
     </select>
 
-    <!-- Champs de saisie dynamiques -->
+    <!-- Champs dynamiques -->
     <label v-if="curveFields.includes('a')">Coefficient a :</label>
     <input v-if="curveFields.includes('a')" v-model="a" type="number" step="any" />
 
     <label v-if="curveFields.includes('b')">Coefficient b :</label>
     <input v-if="curveFields.includes('b')" v-model="b" type="number" step="any" />
-
-    <label v-if="curveFields.includes('c')">Coefficient c :</label>
-    <input v-if="curveFields.includes('c')" v-model="c" type="number" step="any" />
 
     <label v-if="curveFields.includes('d')">Coefficient d :</label>
     <input v-if="curveFields.includes('d')" v-model="d" type="number" step="any" />

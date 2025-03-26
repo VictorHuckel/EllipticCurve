@@ -41,22 +41,37 @@ exports.calculateWeierstrass = (req, res) => {
 
 
 exports.calculateEdwards = (req, res) => {
-    const { a, d, x } = req.body;
-    const cacheKey = `edwards_${a}_${d}_${x}`;
+    const { d, x } = req.body;
 
-    if (cache.has(cacheKey)) {
-        return res.json({ result: cache.get(cacheKey), cached: true });
+    if (typeof d !== "number" || typeof x !== "number") {
+        return res.status(400).json({ error: "Les valeurs de 'd' et 'x' doivent être numériques." });
     }
 
-    try {
-        const curve = new Edwards(a, d);
-        const result = curve.evaluate(x);
-        cache.set(cacheKey, result);
-        res.json({ result, cached: false });
-    } catch (error) {
-        console.error("Erreur dans calculateEdwards:", error.message);
-        res.status(400).json({ error: error.message });
+    if (d === 1) {
+        return res.status(400).json({ error: "Le coefficient 'd' ne peut pas être égal à 1." });
     }
+
+    // Calcul du discriminant
+    const discriminant = 1 - x ** 2 + d * x ** 2;
+    if (discriminant < 0) {
+        return res.status(400).json({ error: "Aucune solution réelle pour ce x donné." });
+    }
+
+    // Calcul des deux valeurs possibles de y
+    const y_positive = Math.sqrt(discriminant);
+    const y_negative = -y_positive;
+
+    // Expressions Desmos
+    const edwards_positive = `sqrt(1 - x^2 + ${d} * x^2 * y^2)`;
+    const edwards_negative = `-sqrt(1 - x^2 + ${d} * x^2 * y^2)`;
+
+    res.json({
+        equation: `x^2 + y^2 = 1 + ${d} * x^2 * y^2`,
+        edwards_positive,
+        edwards_negative,
+        y_positive,
+        y_negative
+    });
 };
 
 exports.calculateTwistedEdwards = (req, res) => {

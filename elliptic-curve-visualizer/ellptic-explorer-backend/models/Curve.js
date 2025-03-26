@@ -21,13 +21,20 @@ class Montgomery {
 }
 
 class Edwards {
-    constructor(c, d) {
-        this.c = c;
+    constructor(d) {
         this.d = d;
     }
 
-    evaluate(x, y) {
-        return this.c * x * x + y * y - 1 - this.d * x * x * y * y;
+    evaluate(x) {
+        const numerator = 1 - Math.pow(x, 2);
+        const denominator = 1 - this.d * Math.pow(x, 2);
+
+        if (denominator === 0) {
+            throw new Error("Division par zéro, valeur de x non valide sur la courbe.");
+        }
+
+        const y = Math.sqrt(numerator / denominator);
+        return y;
     }
 }
 class TwistedEdwards {
