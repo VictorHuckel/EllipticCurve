@@ -126,13 +126,7 @@ onMounted(() => {
   <div>
     <h2>Calcul de courbe elliptique</h2>
 
-    <!-- Sélection du type de courbe -->
-    <label>Type de courbe :</label>
-    <select v-model="store.curveType">
-      <option value="weierstrass">Weierstrass</option>
-      <option value="edwards">Edwards</option>
-      <option value="montgomery">Montgomery</option>
-    </select>
+    <!-- Sélection du type de courbe --
 
     <!-- Champs dynamiques -->
     <label v-if="store.curveFields.includes('a')">Coefficient a :</label>
