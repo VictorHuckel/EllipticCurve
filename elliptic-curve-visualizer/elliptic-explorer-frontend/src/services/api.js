@@ -11,6 +11,7 @@ export const getWeierstrassCurve = async (params) => {
         throw error;
     }
 };
+
 export const montgomery = async (params) => {
     try {
         const response = await axios.post(`${API_URL}/montgomery`, params);

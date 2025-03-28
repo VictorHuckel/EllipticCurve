@@ -1,60 +1,41 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { onMounted } from "vue";
 import axios from "axios";
+import { useCurveStore } from "@/stores/curveStore";
 
-// Variables réactives
-const curveType = ref("weierstrass");
-const a = ref("");
-const b = ref("");
-const d = ref(""); // d est utilisé pour Edwards
-const x = ref("");
-const y = ref("");
-const errorMessage = ref("");
-const result = ref(null);
-const cached = ref(false);
+// Utilisation du store
+const store = useCurveStore();
+
+// Variables locales
 let calculator = null;
-
-// Champs requis selon le type de courbe
-const curveFields = computed(() => {
-  switch (curveType.value) {
-    case "weierstrass":
-      return ["a", "b", "x"];
-    case "edwards":
-      return ["d", "x"];
-    case "montgomery":
-      return ["a", "b", "x"];
-    default:
-      return [];
-  }
-});
 
 // Validation des entrées
 const validateInputs = () => {
-  const xNum = parseFloat(x.value);
+  const xNum = parseFloat(store.x);
   if (isNaN(xNum)) {
-    errorMessage.value = "x doit être un nombre.";
+    store.errorMessage = "x doit être un nombre.";
     return false;
   }
 
-  if (curveFields.value.includes("a") && isNaN(parseFloat(a.value))) {
-    errorMessage.value = "a doit être un nombre.";
+  if (store.curveFields.includes("a") && isNaN(parseFloat(store.a))) {
+    store.errorMessage = "a doit être un nombre.";
     return false;
   }
 
-  if (curveFields.value.includes("b") && isNaN(parseFloat(b.value))) {
-    errorMessage.value = "b doit être un nombre.";
+  if (store.curveFields.includes("b") && isNaN(parseFloat(store.b))) {
+    store.errorMessage = "b doit être un nombre.";
     return false;
   }
 
-  if (curveFields.value.includes("d")) {
-    const dNum = parseFloat(d.value);
+  if (store.curveFields.includes("d")) {
+    const dNum = parseFloat(store.d);
     if (isNaN(dNum) || dNum === 1) {
-      errorMessage.value = "d doit être un nombre différent de 1.";
+      store.errorMessage = "d doit être un nombre différent de 1.";
       return false;
     }
   }
 
-  errorMessage.value = "";
+  store.errorMessage = "";
   return true;
 };
 
@@ -63,19 +44,19 @@ const sendRequest = async () => {
   if (!validateInputs()) return;
 
   try {
-    const payload = { x: parseFloat(x.value) };
-    if (curveType.value === "edwards") {
-      payload.d = parseFloat(d.value);
+    const payload = { x: parseFloat(store.x) };
+    if (store.curveType === "edwards") {
+      payload.d = parseFloat(store.d);
     } else {
-      if (curveFields.value.includes("a")) payload.a = parseFloat(a.value);
-      if (curveFields.value.includes("b")) payload.b = parseFloat(b.value);
+      if (store.curveFields.includes("a")) payload.a = parseFloat(store.a);
+      if (store.curveFields.includes("b")) payload.b = parseFloat(store.b);
     }
 
-    const response = await axios.post(`http://localhost:5000/api/curves/${curveType.value}`, payload);
-    result.value = response.data.result;
+    const response = await axios.post(`http://localhost:5000/api/curves/${store.curveType}`, payload);
+    store.result = response.data.result;
     updateGraph();
   } catch (error) {
-    errorMessage.value = error.response?.data?.error || "Erreur inconnue.";
+    store.errorMessage = error.response?.data?.error || "Erreur inconnue.";
   }
 };
 
@@ -85,11 +66,11 @@ const updateGraph = () => {
 
   calculator.setExpressions([]); // Réinitialiser
 
-  switch (curveType.value) {
+  switch (store.curveType) {
     case "weierstrass":
       calculator.setExpression({
         id: "curve",
-        latex: `y^2 = x^3 + ${a.value}x + ${b.value}`,
+        latex: `y^2 = x^3 + ${store.a}x + ${store.b}`,
         color: "blue",
       });
       break;
@@ -97,12 +78,12 @@ const updateGraph = () => {
     case "edwards":
       calculator.setExpression({
         id: "edwards_positive",
-        latex: `y=\\sqrt{\\frac{1 - x^2}{1 - ${d.value} * x^2}}`,
+        latex: `y=\\sqrt{\\frac{1 - x^2}{1 - ${store.d} * x^2}}`,
         color: "blue",
       });
       calculator.setExpression({
         id: "edwards_negative",
-        latex: `y=-\\sqrt{\\frac{1 - x^2}{1 - ${d.value} * x^2}}`,
+        latex: `y=-\\sqrt{\\frac{1 - x^2}{1 - ${store.d} * x^2}}`,
         color: "blue",
       });
       break;
@@ -110,16 +91,16 @@ const updateGraph = () => {
     case "montgomery":
       calculator.setExpression({
         id: "curve",
-        latex: `y^2 = x^3 + ${a.value}x^2 + ${b.value}x`,
+        latex: `y^2 = x^3 + ${store.a}x^2 + ${store.b}x`,
         color: "blue",
       });
       break;
   }
 
-  if (result.value !== null) {
+  if (store.result !== null) {
     calculator.setExpression({
       id: "point",
-      latex: `(${x.value}, ${result.value})`,
+      latex: `(${store.x}, ${store.result})`,
       color: "red",
       pointStyle: "POINT",
     });
@@ -147,31 +128,31 @@ onMounted(() => {
 
     <!-- Sélection du type de courbe -->
     <label>Type de courbe :</label>
-    <select v-model="curveType">
+    <select v-model="store.curveType">
       <option value="weierstrass">Weierstrass</option>
       <option value="edwards">Edwards</option>
       <option value="montgomery">Montgomery</option>
     </select>
 
     <!-- Champs dynamiques -->
-    <label v-if="curveFields.includes('a')">Coefficient a :</label>
-    <input v-if="curveFields.includes('a')" v-model="a" type="number" step="any" />
+    <label v-if="store.curveFields.includes('a')">Coefficient a :</label>
+    <input v-if="store.curveFields.includes('a')" v-model="store.a" type="number" step="any" />
 
-    <label v-if="curveFields.includes('b')">Coefficient b :</label>
-    <input v-if="curveFields.includes('b')" v-model="b" type="number" step="any" />
+    <label v-if="store.curveFields.includes('b')">Coefficient b :</label>
+    <input v-if="store.curveFields.includes('b')" v-model="store.b" type="number" step="any" />
 
-    <label v-if="curveFields.includes('d')">Coefficient d :</label>
-    <input v-if="curveFields.includes('d')" v-model="d" type="number" step="any" />
+    <label v-if="store.curveFields.includes('d')">Coefficient d :</label>
+    <input v-if="store.curveFields.includes('d')" v-model="store.d" type="number" step="any" />
 
     <label>Valeur x :</label>
-    <input v-model="x" type="number" step="any" />
+    <input v-model="store.x" type="number" step="any" />
 
     <button @click="sendRequest">Calculer</button>
 
-    <p v-if="errorMessage" style="color: red;">{{ errorMessage }}</p>
+    <p v-if="store.errorMessage" style="color: red;">{{ store.errorMessage }}</p>
 
-    <p v-if="result !== null">
-      Résultat : y = {{ result }} <span v-if="cached">(mis en cache)</span>
+    <p v-if="store.result !== null">
+      Résultat : y = {{ store.result }}
     </p>
 
     <div id="calculator" style="width: 600px; height: 400px;"></div>
