@@ -11,3 +11,33 @@ export const getWeierstrassCurve = async (params) => {
         throw error;
     }
 };
+
+export const getShortWeierstrassCurve = async (params) => {
+    try {
+        const response = await axios.post(`${API_URL}/shortweierstrass`, params);
+        return response.data;
+    } catch (error) {
+        console.error("Erreur API:", error);
+        throw error;
+    }
+};
+
+export const getEdwardsCurve = async (params) => {
+    try {
+        const response = await axios.post(`${API_URL}/edwards`, params);
+        return response.data;
+    } catch (error) {
+        console.error("Erreur API:", error);
+        throw error;
+    }
+};
+
+export const getMontgomeryCurve = async (params) => {
+    try {
+        const response = await axios.post(`${API_URL}/montgomery`, params);
+        return response.data;
+    } catch (error) {
+        console.error("Erreur API:", error);
+        throw error;
+    }
+};
