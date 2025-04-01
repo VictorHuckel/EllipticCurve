@@ -4,6 +4,7 @@ import { useCurveStore } from "@/stores/curveStore";
 import GraphDisplay from "./components/GraphDisplay.vue";
 import GraphDisplay3D from "./components/GraphDisplay3D.vue";
 import EllipticTorus from "./components/EllipticTorus.vue";
+import EllipticSphere from "./components/EllipticSphere.vue";
 
 const store = useCurveStore();
 
@@ -66,7 +67,9 @@ const curveInfo = computed(() => {
         <div class="graph-container">
           <EllipticTorus />
         </div>
-        
+        <div class="graph-container">
+          <EllipticSphere />
+        </div>
       </div>
     </main>
   </div>

@@ -63,7 +63,7 @@ export default {
       const r = 1; // Rayon du tube
 
       for (let t = -Math.PI; t <= Math.PI; t += 0.01) {
-        const x = t; // Utilisation de t comme paramètre x
+        const x = t;
         const ySquared = x ** 3 + a * x + b;
         const y = Math.sqrt(Math.abs(ySquared)) * (ySquared >= 0 ? 1 : -1);
 
