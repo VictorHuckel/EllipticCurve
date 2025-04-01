@@ -126,7 +126,7 @@ onMounted(() => {
   <div>
     <h2>Calcul de courbe elliptique</h2>
 
-    <!-- Sélection du type de courbe --
+    <!-- Sélection du type de courbe -->
 
     <!-- Champs dynamiques -->
     <label v-if="store.curveFields.includes('a')">Coefficient a :</label>

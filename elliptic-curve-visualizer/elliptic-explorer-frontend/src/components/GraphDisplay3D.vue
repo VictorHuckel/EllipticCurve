@@ -12,9 +12,7 @@ export default {
   setup() {
     const store = useCurveStore();
 
-    // Met à jour le graph quand les valeurs changent
     watch(() => [store.curveType, store.a, store.b, store.d], () => {
-      console.log("Mise à jour du graphique...");
       updateGraph();
     });
 
@@ -78,8 +76,6 @@ export default {
     };
 
     const addCurve = (equation) => {
-      console.log("Equation utilisée :", equation);
-
       const surfaces = generateSurfaces(equation);
       surfaces.forEach((surface) => scene.add(surface));
     };
@@ -87,9 +83,9 @@ export default {
     const generateSurfaces = (equation) => {
       const surfaces = [];
       const zRange = 5;
-      const resolution = 100;
+      const resolution = 1000;
       const zSteps = 20;
-      const xMin = -2, xMax = 2;
+      const xMin = -5, xMax = 5;
 
       [1, -1].forEach((sign) => {
         const geometry = new THREE.BufferGeometry();
@@ -103,15 +99,9 @@ export default {
             const x = (i / resolution) * (xMax - xMin) + xMin;
             try {
               const ySquared = eval(equation.replace(/x/g, `(${x})`));
-              console.log(`x: ${x}, y²: ${ySquared}`);
-              if (ySquared >= 0) {
-                const y = sign * Math.sqrt(ySquared);
-                vertices.push(x, y, z);
-                validPoints.push(true);
-              } else {
-                vertices.push(x, 0, z);
-                validPoints.push(false);
-              }
+              const y = sign * Math.sqrt(ySquared);
+              vertices.push(x, y, z);
+              validPoints.push(true);
             } catch (error) {
               console.error("Erreur lors de l'évaluation de l'équation :", error);
             }
