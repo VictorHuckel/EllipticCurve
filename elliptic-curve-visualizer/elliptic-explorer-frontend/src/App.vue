@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from "vue";
 import { useCurveStore } from "@/stores/curveStore";
+import Menu from "./components/Menu.vue";
 import GraphDisplay from "./components/GraphDisplay.vue";
 import GraphDisplay3D from "./components/GraphDisplay3D.vue";
 import EllipticTorus from "./components/EllipticTorus.vue";
@@ -14,49 +15,43 @@ const curveInfo = computed(() => {
       return {
         name: "Courbe de Weierstrass",
         equation: "y² = x³ + ax + b",
-        description:
-          "Utilisée en cryptographie, cette forme générale décrit la majorité des courbes elliptiques."
+        description: "Utilisée en cryptographie, cette forme générale décrit la majorité des courbes elliptiques."
       };
     case "edwards":
       return {
         name: "Courbe d'Edwards",
         equation: "x² + y² = 1 + d x² y²",
-        description:
-          "Permet des calculs plus efficaces et sécurisés, souvent utilisée pour les signatures numériques."
+        description: "Permet des calculs plus efficaces et sécurisés, souvent utilisée pour les signatures numériques."
       };
     case "montgomery":
       return {
         name: "Courbe de Montgomery",
         equation: "By² = x³ + Ax² + x",
-        description:
-          "Optimisée pour l’algorithme d'échange de clé Diffie-Hellman, elle offre des calculs rapides."
+        description: "Optimisée pour l’algorithme d'échange de clé Diffie-Hellman, elle offre des calculs rapides."
       };
     default:
       return { name: "", equation: "", description: "" };
   }
 });
+
+const onCurveChanged = (curveType) => {
+  store.curveType = curveType;
+};
 </script>
 
 <template>
   <div class="app-container">
     <aside class="sidebar">
-      <h3>Sélection de la courbe</h3>
-      <label>Type de courbe :</label>
-      <select v-model="store.curveType">
-        <option value="weierstrass">Weierstrass</option>
-        <option value="edwards">Edwards</option>
-        <option value="montgomery">Montgomery</option>
-      </select>
-
-      <!-- Cadre d'informations sur la courbe -->
-      <div class="info-section">
+      <Menu @curveChanged="onCurveChanged" />
+      <div class="info-section" v-if="curveInfo.name">
         <h3>{{ curveInfo.name }}</h3>
         <p><strong>Équation :</strong> {{ curveInfo.equation }}</p>
         <p>{{ curveInfo.description }}</p>
       </div>
     </aside>
+
     <main class="main-content">
-      <h1>Bienvenue sur mon application Vue !</h1>
+      <h1>Visualiseur de courbes elliptiques</h1>
       <div class="graphs-container">
         <div class="graph-container">
           <GraphDisplay />
@@ -91,14 +86,6 @@ const curveInfo = computed(() => {
   flex-direction: column;
   align-items: flex-start;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  box-sizing: border-box; /* Ajouté */
-}
-
-/* Augmentation de la taille du texte pour le label */
-.sidebar label {
-  font-size: 1.3rem;
-  font-weight: bold;
-  margin-bottom: 10px;
 }
 
 .info-section {
@@ -109,17 +96,6 @@ const curveInfo = computed(() => {
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   margin-top: 20px;
   width: 100%;
-  box-sizing: border-box; /* Ajouté */
-}
-
-.info-section h3 {
-  font-size: 1.2rem;
-  margin-bottom: 10px;
-}
-
-.info-section p {
-  font-size: 0.9rem;
-  margin-bottom: 5px;
 }
 
 .main-content {
