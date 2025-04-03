@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useCurveStore } from "@/stores/curveStore";
 import Menu from "./components/Menu.vue";
 import GraphDisplay from "./components/GraphDisplay.vue";
@@ -8,6 +8,8 @@ import EllipticTorus from "./components/EllipticTorus.vue";
 import EllipticSphere from "./components/EllipticSphere.vue";
 
 const store = useCurveStore();
+
+const show3DView = ref(false);
 
 const curveInfo = computed(() => {
   switch (store.curveType) {
@@ -37,6 +39,14 @@ const curveInfo = computed(() => {
 const onCurveChanged = (curveType) => {
   store.curveType = curveType;
 };
+
+const toggle3D = () => {
+  show3DView.value = true;
+};
+
+const toggle2D = () => {
+  show3DView.value = false;
+};
 </script>
 
 <template>
@@ -52,17 +62,27 @@ const onCurveChanged = (curveType) => {
 
     <main class="main-content">
       <h1>Visualiseur de courbes elliptiques</h1>
+      <!-- Bouton pour activer l'affichage 3D ou revenir à l'affichage 2D -->
+      <button @click="toggle3D" v-if="!show3DView">
+        3D Visualisation
+      </button>
+      <button @click="toggle2D" v-if="show3DView">
+        2D Visualisation
+      </button>
       <div class="graphs-container">
-        <div class="graph-container">
+        <!-- Affichage par défaut -->
+        <div class="graph-container" v-if="!show3DView">
           <GraphDisplay />
         </div>
-        <div class="graph-container">
+        <div class="graph-container" v-if="!show3DView">
           <GraphDisplay3D />
         </div>
-        <div class="graph-container">
+
+        <!-- Affichage 3D alternatif -->
+        <div class="graph-container" v-if="show3DView">
           <EllipticTorus />
         </div>
-        <div class="graph-container">
+        <div class="graph-container" v-if="show3DView">
           <EllipticSphere />
         </div>
       </div>
@@ -101,6 +121,16 @@ const onCurveChanged = (curveType) => {
 .main-content {
   padding: 20px;
   overflow-y: auto;
+}
+
+button {
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  background-color: #2c3e50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 .graphs-container {
