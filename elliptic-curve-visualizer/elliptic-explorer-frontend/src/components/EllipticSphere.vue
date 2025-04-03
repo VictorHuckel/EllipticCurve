@@ -46,7 +46,7 @@
         scene.add(directionalLight);
   
         const sphereGeometry = new THREE.SphereGeometry(3, 32, 32);
-        const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0x000000, wireframe: false });
+        const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, wireframe: false });
         const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
         scene.add(sphere);
   
@@ -76,7 +76,7 @@
         }
   
         const curveGeometry = new THREE.BufferGeometry().setFromPoints(points);
-        const curveMaterial = new THREE.LineBasicMaterial({ color: 0xff0404, linewidth: 2 });
+        const curveMaterial = new THREE.LineBasicMaterial({ color: 0x0000FF, linewidth: 2});
         const curveMesh = new THREE.Line(curveGeometry, curveMaterial);
         scene.add(curveMesh);
       };

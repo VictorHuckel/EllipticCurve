@@ -46,7 +46,7 @@ export default {
       scene.add(directionalLight);
 
       const torusGeometry = new THREE.TorusGeometry(3, 1, 30, 100);
-      const torusMaterial = new THREE.MeshStandardMaterial({ color: 0x000000, wireframe: true });
+      const torusMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, wireframe: false });
       const torus = new THREE.Mesh(torusGeometry, torusMaterial);
       scene.add(torus);
 
@@ -78,7 +78,7 @@ export default {
       }
 
       const curveGeometry = new THREE.BufferGeometry().setFromPoints(points);
-      const curveMaterial = new THREE.LineBasicMaterial({ color: 0xff0404, linewidth: 2 });
+      const curveMaterial = new THREE.LineBasicMaterial({ color: 0x0000FF, linewidth: 2 });
       const curveMesh = new THREE.Line(curveGeometry, curveMaterial);
       scene.add(curveMesh);
     };
