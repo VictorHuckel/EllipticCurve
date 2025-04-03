@@ -111,7 +111,10 @@ const toggle2D = () => {
 .info-section {
   background: white;
   color: #333;
-  padding: 20px;
+  padding: 20px; 
+  padding-left: 20px; /* Horizontal padding addition */
+  padding-right: 20px; /* Horizontal padding addition */
+  box-sizing: border-box; /* Ensure padding doesn't cause overflow */
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   margin-top: 20px;
