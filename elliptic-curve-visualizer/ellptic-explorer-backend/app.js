@@ -28,6 +28,7 @@ app.use(limiter);
 // Montage des routes pour les courbes sous le chemin /api/curves
 app.use("/api/curves", curveRoutes);
 
+
 // Lancement du serveur sur le port défini (5000 par défaut ou défini via la variable d'environnement PORT)
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

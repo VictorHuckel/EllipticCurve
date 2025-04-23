@@ -1,13 +1,13 @@
 import { createRouter, createWebHistory } from "vue-router";
-import WeierstrassView from "@/views/WeierstrassView.vue";
+import App from "@/App.vue";
 
 const routes = [
-    { path: "/", component: WeierstrassView },
+  { path: "/", component: App }, // on rend directement le composant principal
 ];
 
 const router = createRouter({
-    history: createWebHistory(),
-    routes,
+  history: createWebHistory(),
+  routes,
 });
 
 export default router;

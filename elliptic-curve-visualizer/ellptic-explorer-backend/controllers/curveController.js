@@ -1,113 +1,57 @@
+/**
+ * This file defines the controller logic for handling requests related to elliptic curve computations.
+ * It processes incoming requests, validates the data, and invokes the core computation logic.
+ */
 
-const NodeCache = require("node-cache");
-const { Weierstrass, Montgomery, Edwards } = require("../models/Curve");
+const { generateCurvePoints } = require("../services/curveEngine");
 
+/**
+ * Handles the computation of elliptic curve points based on the request parameters.
+ * It extracts the parameters from the request body, invokes the `generateCurvePoints` function,
+ * and returns the computed points as a JSON response.
+ *
+ * @param {Object} req - The HTTP request object containing curve parameters in the body.
+ * @param {Object} res - The HTTP response object used to send back the result or errors.
+ */
+function computeCurve(req, res) {
+  try {
+    const {
+      type,
+      field,
+      a,
+      b,
+      d,
+      p,
+      xMin,
+      xMax,
+      resolution,
+      zDepth,
+      zSteps
+    } = req.body;
 
-const cache = new NodeCache({ stdTTL: 60 });
-
-// Contrôleur pour le calcul de la courbe de Weierstrass
-exports.calculateWeierstrass = (req, res) => {
-    // Extraction des paramètres a, b et x depuis le corps de la requête
-    const { a, b, x } = req.body;
-    
-    const cacheKey = `weierstrass_${a}_${b}_${x}`;
-
-    if (cache.has(cacheKey)) {
-
-        return res.json({ result: cache.get(cacheKey), cached: true });
-    }
-
-    try {
-        // Vérifie que la courbe de Weierstrass n'est pas singulière
-        if (4 * Math.pow(a, 3) + 27 * Math.pow(b, 2) === 0) {
-            throw new Error("La courbe de Weierstrass est singulière.");
-        }
-
-
-        const curve = new Weierstrass(a, b);
-        // Calcul de la valeur de la courbe pour la valeur x donnée
-        const result = curve.evaluate(x);
-
-
-        cache.set(cacheKey, result);
-
-        res.json({ result, cached: false });
-    } catch (error) {
-
-        console.error("Erreur dans calculateWeierstrass:", error.message);
-        res.status(400).json({ error: error.message });
-    }
-};
-
-
-exports.calculateEdwards = (req, res) => {
-    const { d, x } = req.body;
-
-    if (typeof d !== "number" || typeof x !== "number") {
-        return res.status(400).json({ error: "Les valeurs de 'd' et 'x' doivent être numériques." });
-    }
-
-    if (d === 1) {
-        return res.status(400).json({ error: "Le coefficient 'd' ne peut pas être égal à 1." });
-    }
-
-    // Calcul du discriminant
-    const discriminant = 1 - x ** 2 + d * x ** 2;
-    if (discriminant < 0) {
-        return res.status(400).json({ error: "Aucune solution réelle pour ce x donné." });
-    }
-
-    // Calcul des deux valeurs possibles de y
-    const y_positive = Math.sqrt(discriminant);
-    const y_negative = -y_positive;
-
-    // Expressions Desmos
-    const edwards_positive = `sqrt(1 - x^2 + ${d} * x^2 * y^2)`;
-    const edwards_negative = `-sqrt(1 - x^2 + ${d} * x^2 * y^2)`;
-
-    res.json({
-        equation: `x^2 + y^2 = 1 + ${d} * x^2 * y^2`,
-        edwards_positive,
-        edwards_negative,
-        y_positive,
-        y_negative
+    // Parse and validate input parameters
+    const result = generateCurvePoints({
+      type,
+      field,
+      a: parseFloat(a),
+      b: parseFloat(b),
+      d: parseFloat(d),
+      p: parseInt(p),
+      xMin: parseFloat(xMin),
+      xMax: parseFloat(xMax),
+      resolution: parseInt(resolution),
+      zDepth: parseFloat(zDepth),
+      zSteps: parseInt(zSteps)
     });
-};
 
-exports.calculateTwistedEdwards = (req, res) => {
-    const { a, d, x } = req.body;
-    const cacheKey = `twistededwards_${a}_${d}_${x}`;
+    // Send the computed result as a JSON response
+    res.json(result);
+  } catch (err) {
+    console.error("[computeCurve] Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+}
 
-    if (cache.has(cacheKey)) {
-        return res.json({ result: cache.get(cacheKey), cached: true });
-    }
-
-    try {
-        const curve = new TwistedEdwards(a, d);
-        const result = curve.evaluate(x);
-        cache.set(cacheKey, result);
-        res.json({ result, cached: false });
-    } catch (error) {
-        console.error("Erreur dans calculateTwistedEdwards:", error.message);
-        res.status(400).json({ error: error.message });
-    }
-};
-
-exports.calculateMontgomery = (req, res) => {
-    const { a, b, x } = req.body;
-    const cacheKey = `montgomery_${a}_${b}_${x}`;
-
-    if (cache.has(cacheKey)) {
-        return res.json({ result: cache.get(cacheKey), cached: true });
-    }
-
-    try {
-        const curve = new Montgomery(a, b);
-        const result = curve.evaluate(x);
-        cache.set(cacheKey, result);
-        res.json({ result, cached: false });
-    } catch (error) {
-        console.error("Erreur dans calculateMontgomery:", error.message);
-        res.status(400).json({ error: error.message });
-    }
+module.exports = {
+  computeCurve
 };

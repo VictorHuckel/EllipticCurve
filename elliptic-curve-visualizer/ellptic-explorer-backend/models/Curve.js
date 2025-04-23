@@ -1,52 +1,106 @@
-class Weierstrass {
-    constructor(a, b) {
-        this.a = a;
-        this.b = b;
-    }
+/**
+ * This file defines the mathematical models for various types of elliptic curves.
+ * It includes implementations for Weierstrass, Montgomery, and Edwards curves,
+ * as well as their homogeneous forms.
+ */
 
-    evaluate(x) {
-        return Math.pow(x, 3) + this.a * x + this.b;
-    }
+function mod(n, p) {
+  // Computes the modulo operation ensuring a positive result.
+  return ((n % p) + p) % p;
+}
+
+class Weierstrass {
+  constructor(a, b) {
+    this.a = a;
+    this.b = b;
+  }
+
+  // Evaluates the Weierstrass curve equation: y² = x³ + ax + b
+  evaluate(x, field = "real", p = null) {
+    const val = x ** 3 + this.a * x + this.b;
+    return (field === "modulo" && p) ? mod(val, p) : val;
+  }
 }
 
 class Montgomery {
-    constructor(A, B) {
-        this.A = A;
-        this.B = B;
-    }
+  constructor(a, b) {
+    this.a = a;
+    this.b = b;
+  }
 
-    evaluate(x) {
-        return Math.sqrt(x * (x * x + this.A * x + this.B));
-    }
+  // y² = x³ + ax² + bx
+  evaluate(x, field = "real", p = null) {
+    const val = x ** 3 + this.a * x ** 2 + this.b * x;
+    return (field === "modulo" && p) ? mod(val, p) : val;
+  }
 }
 
 class Edwards {
-    constructor(d) {
-        this.d = d;
-    }
+  constructor(d) {
+    this.d = d;
+  }
 
-    evaluate(x) {
-        const numerator = 1 - Math.pow(x, 2);
-        const denominator = 1 - this.d * Math.pow(x, 2);
-
-        if (denominator === 0) {
-            throw new Error("Division par zéro, valeur de x non valide sur la courbe.");
-        }
-
-        const y = Math.sqrt(numerator / denominator);
-        return y;
-    }
-}
-class TwistedEdwards {
-    constructor(a, d) {
-        this.a = a;
-        this.d = d;
-    }
-
-    evaluate(x, y) {
-        return this.a * x * x + y * y - 1 - this.d * x * x * y * y;
-    }
+  // x² + y² = 1 + d x² y²
+  // y² = (1 - x²)/(1 - d x²)
+  evaluate(x, field = "real", p = null) {
+    const num = 1 - x * x;
+    const den = 1 - this.d * x * x;
+    if (Math.abs(den) < 1e-14) return -1; // singularité
+    const val = num / den;
+    return (field === "modulo" && p) ? mod(val, p) : val;
+  }
 }
 
-module.exports = { Weierstrass, Montgomery, Edwards, TwistedEdwards };
+class WeierstrassHomogeneous {
+  constructor(a, b) {
+    this.a = a;
+    this.b = b;
+  }
+
+  // Y²Z = X³ + aXZ² + bZ³
+  evaluate(X, Y, Z, field = "real", p = null) {
+    const lhs = Y * Y * Z;
+    const rhs = X ** 3 + this.a * X * Z ** 2 + this.b * Z ** 3;
+    const val = lhs - rhs;
+    return (field === "modulo" && p) ? mod(val, p) : val;
+  }
+}
+
+class MontgomeryHomogeneous {
+  constructor(a, b) {
+    this.a = a;
+    this.b = b;
+  }
+
+  // Y²Z = X³ + aX²Z + bXZ²
+  evaluate(X, Y, Z, field = "real", p = null) {
+    const lhs = Y * Y * Z;
+    const rhs = X ** 3 + this.a * X ** 2 * Z + this.b * X * Z ** 2;
+    const val = lhs - rhs;
+    return (field === "modulo" && p) ? mod(val, p) : val;
+  }
+}
+
+class EdwardsHomogeneous {
+  constructor(d) {
+    this.d = d;
+  }
+
+  // X²Z² + Y²Z² = Z⁴ + dX²Y²
+  evaluate(X, Y, Z, field = "real", p = null) {
+    const lhs = (X * X + Y * Y) * (Z * Z);
+    const rhs = Z ** 4 + this.d * X * X * Y * Y;
+    const val = lhs - rhs;
+    return (field === "modulo" && p) ? mod(val, p) : val;
+  }
+}
+
+module.exports = {
+  Weierstrass,
+  Montgomery,
+  Edwards,
+  WeierstrassHomogeneous,
+  MontgomeryHomogeneous,
+  EdwardsHomogeneous
+};
 

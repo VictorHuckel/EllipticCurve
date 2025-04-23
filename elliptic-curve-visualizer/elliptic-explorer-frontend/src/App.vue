@@ -3,13 +3,12 @@ import { computed, ref } from "vue";
 import { useCurveStore } from "@/stores/curveStore";
 import Menu from "./components/Menu.vue";
 import GraphDisplay from "./components/GraphDisplay.vue";
-import GraphDisplay3D from "./components/GraphDisplay3D.vue";
+import GraphDisplayHomogeneous from "./components/GraphDisplayHomogeneous.vue";
 import EllipticTorus from "./components/EllipticTorus.vue";
 import EllipticSphere from "./components/EllipticSphere.vue";
+import Loader from "./components/Loader.vue";
 
 const store = useCurveStore();
-
-const show3DView = ref(false);
 
 const curveInfo = computed(() => {
   switch (store.curveType) {
@@ -17,42 +16,50 @@ const curveInfo = computed(() => {
       return {
         name: "Courbe de Weierstrass",
         equation: "y² = x³ + ax + b",
-        description: "Utilisée en cryptographie, cette forme générale décrit la majorité des courbes elliptiques."
+        description:
+          "Utilisée en cryptographie, cette forme générale décrit la majorité des courbes elliptiques."
       };
     case "edwards":
       return {
         name: "Courbe d'Edwards",
-        equation: "x² + y² = 1 + d x² y²",
-        description: "Permet des calculs plus efficaces et sécurisés, souvent utilisée pour les signatures numériques."
+        equation: "x² + y² = 1 + d x²y²",
+        description:
+          "Permet des calculs plus efficaces et sécurisés, souvent utilisée pour les signatures numériques."
       };
     case "montgomery":
       return {
         name: "Courbe de Montgomery",
-        equation: "By² = x³ + Ax² + x",
-        description: "Optimisée pour l’algorithme d'échange de clé Diffie-Hellman, elle offre des calculs rapides."
+        equation: "y² = x³ + ax² + bx",
+        description:
+          "Optimisée pour l’algorithme d'échange de clé Diffie-Hellman, elle offre des calculs rapides."
       };
     default:
       return { name: "", equation: "", description: "" };
   }
 });
 
+const activeViews = ref(["2D", "Sphere"]);
+
+// Nouvelle variable pour stocker le point sélectionné
+const selectedPoint = ref({ x: null, y: null });
+
 const onCurveChanged = (curveType) => {
   store.curveType = curveType;
 };
 
-const toggle3D = () => {
-  show3DView.value = true;
+const onViewsChanged = (views) => {
+  activeViews.value = views;
 };
 
-const toggle2D = () => {
-  show3DView.value = false;
+const onPointSelected = (point) => {
+  selectedPoint.value = point;
 };
 </script>
 
 <template>
   <div class="app-container">
     <aside class="sidebar">
-      <Menu @curveChanged="onCurveChanged" />
+      <Menu @curveChanged="onCurveChanged" @viewsChanged="onViewsChanged" />
       <div class="info-section" v-if="curveInfo.name">
         <h3>{{ curveInfo.name }}</h3>
         <p><strong>Équation :</strong> {{ curveInfo.equation }}</p>
@@ -62,28 +69,24 @@ const toggle2D = () => {
 
     <main class="main-content">
       <h1>Visualiseur de courbes elliptiques</h1>
-      <!-- Bouton pour activer l'affichage 3D ou revenir à l'affichage 2D -->
-      <button @click="toggle3D" v-if="!show3DView">
-        3D Visualisation
-      </button>
-      <button @click="toggle2D" v-if="show3DView">
-        2D Visualisation
-      </button>
       <div class="graphs-container">
-        <!-- Affichage par défaut -->
-        <div class="graph-container" v-if="!show3DView">
-          <GraphDisplay />
+        <div class="desmos-column">
+          <div class="graph-container graph-desmos" v-if="activeViews.includes('2D')">
+            <GraphDisplay @pointSelected="onPointSelected" />
+            <Loader :visible="store.loading" />
+          </div>
+          <div class="graph-container graph-desmos" v-if="activeViews.includes('2DHomogeneous')">
+            <GraphDisplayHomogeneous />
+            <Loader :visible="store.loading" />
+          </div>
         </div>
-        <div class="graph-container" v-if="!show3DView">
-          <GraphDisplay3D />
+        <div class="graph-container graph-sphere" v-if="activeViews.includes('Sphere')">
+          <EllipticSphere :point="selectedPoint" />
+          <Loader :visible="store.loading" />
         </div>
-
-        <!-- Affichage 3D alternatif -->
-        <div class="graph-container" v-if="show3DView">
+        <div class="graph-container graph-torus" v-if="activeViews.includes('Torus') && store.field === 'modulo'">
           <EllipticTorus />
-        </div>
-        <div class="graph-container" v-if="show3DView">
-          <EllipticSphere />
+          <Loader :visible="store.loading" />
         </div>
       </div>
     </main>
@@ -92,64 +95,70 @@ const toggle2D = () => {
 
 <style scoped>
 .app-container {
-  display: grid;
-  grid-template-columns: 250px 1fr;
+  display: flex;
   height: 100vh;
-  background: #f4f4f9;
+  overflow: hidden;
 }
 
 .sidebar {
   background: #2c3e50;
   color: white;
   padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  width: 260px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .info-section {
   background: white;
   color: #333;
-  padding: 20px; 
-  padding-left: 20px; /* Horizontal padding addition */
-  padding-right: 20px; /* Horizontal padding addition */
-  box-sizing: border-box; /* Ensure padding doesn't cause overflow */
+  padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   margin-top: 20px;
-  width: 100%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .main-content {
+  flex: 1;
+  overflow: hidden;
   padding: 20px;
-  overflow-y: auto;
-}
-
-button {
-  margin-bottom: 20px;
-  padding: 10px 20px;
-  background-color: #2c3e50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .graphs-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 20px;
-  margin-top: 20px;
+  width: 100%;
+  height: 100%;
+  grid-template-columns: 1fr 1fr; /* Deux colonnes : une pour les graphes Desmos, une pour la sphère */
+  grid-template-rows: 1fr; /* Une seule rangée */
+}
+
+.desmos-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .graph-container {
+  position: relative;
   border: 2px solid #ccc;
   border-radius: 8px;
   overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 400px;
+}
+
+.graph-desmos {
+  flex: 1; /* Les graphes Desmos partagent l'espace verticalement */
+}
+
+.graph-sphere {
+  height: 100%; /* La sphère occupe toute la hauteur de sa colonne */
 }
 </style>

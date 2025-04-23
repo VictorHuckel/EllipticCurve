@@ -11,6 +11,7 @@
   "dependencies": {
     "@vue/runtime-core": "^3.5.13",
     "axios": "^1.8.3",
+    "desmos": "^1.5.4",
     "pinia": "^3.0.1",
     "three": "^0.174.0",
     "vue": "^3.5.13",

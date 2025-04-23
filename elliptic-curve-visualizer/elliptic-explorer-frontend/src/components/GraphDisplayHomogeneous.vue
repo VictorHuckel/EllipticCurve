@@ -1,19 +1,15 @@
 <template>
-  <div id="desmos-view" class="desmos-container"></div>
+  <div id="desmos-homogeneous-view" class="desmos-container"></div>
 </template>
 
 <script setup>
 import { onMounted, watch } from "vue";
 import { useCurveStore } from "@/stores/curveStore";
 import Desmos from "desmos";
-import { defineEmits } from "vue";
 
 const store = useCurveStore();
 let calculator = null;
-let selectedPoint = null;
-
-// Définition de l'événement pour la sélection de point
-const emit = defineEmits(["pointSelected"]);
+let homogeneousCalculator = null;
 
 onMounted(() => {
   const elt = document.getElementById("desmos-view");
@@ -28,17 +24,28 @@ onMounted(() => {
     yAxisLabel: 'y',
     restrictedFunctions: false
   });
-
-  // Ajouter un gestionnaire d'événements pour le clic sur le graphique
-  elt.addEventListener("click", handleGraphClick);
-
   renderCurve();
+  
+  const homogeneousElt = document.getElementById("desmos-homogeneous-view");
+  homogeneousCalculator = Desmos.GraphingCalculator(homogeneousElt, {
+    expressions: false,
+    settingsMenu: false,
+    zoomButtons: true,
+    invertedColors: false,
+    xAxisStep: 1,
+    yAxisStep: 1,
+    xAxisLabel: 'x',
+    yAxisLabel: 'y',
+    restrictedFunctions: false
+  });
+  renderHomogeneousCurve();
 });
 
 watch(
-  () => [store.curveType, store.field, store.graph2D],
+  () => [store.curveType, store.field, store.homogeneousGraph2D],
   () => {
     renderCurve();
+    renderHomogeneousCurve();
   },
   { deep: true }
 );
@@ -83,7 +90,7 @@ function renderImplicitEquation() {
 }
 
 function renderPointCloud() {
-  const data = store.graph2D;
+  const data = store.homogeneousGraph2D;
   if (!data || data.length === 0) return;
 
   const exprs = data.map((pt, i) => ({
@@ -96,30 +103,35 @@ function renderPointCloud() {
   exprs.forEach(e => calculator.setExpression(e));
 }
 
-// Fonction pour gérer le clic sur le graphique
-function handleGraphClick(event) {
-  if (!calculator) return;
+function renderHomogeneousCurve() {
+  if (!homogeneousCalculator) return;
+  homogeneousCalculator.setBlank();
 
-  // Obtenir les coordonnées du clic
-  const rect = event.target.getBoundingClientRect();
-  const x = calculator.pixelsToMath({ x: event.clientX - rect.left, y: 0 }).x;
-  const y = calculator.pixelsToMath({ x: 0, y: event.clientY - rect.top }).y;
+  const a = store.a ?? 1;
+  const b = store.b ?? 1;
+  const d = store.d ?? 1;
 
-  // Émettre l'événement de sélection de point
-  emit("pointSelected", { x, y });
-
-  // Ajouter le point sélectionné au graphique
-  if (selectedPoint) {
-    calculator.removeExpression({ id: "selectedPoint" }); // Supprimer l'ancien point
+  let latex = "";
+  switch (store.curveType) {
+    case "weierstrass":
+      latex = `y = x^3 + ${a}xy^2 + ${b}y^3`;
+      break;
+    case "montgomery":
+      latex = `y = x^3 + ${a}x^2y + ${b}xy^2`;
+      break;
+    case "edwards":
+      latex = `x^2 + y^2 = y^2 + ${d}x^2y^2`;
+      break;
   }
-  selectedPoint = { x, y };
-  calculator.setExpression({
-    id: "selectedPoint",
-    latex: `(${x}, ${y})`,
-    color: Desmos.Colors.GREEN, // Couleur jaune
-    pointStyle: Desmos.Styles.POINT,
-    size: 10, // Taille plus grande
-  });
+
+  if (latex) {
+    homogeneousCalculator.setExpression({
+      id: "homogeneous_curve",
+      latex,
+      color: Desmos.Colors.RED,
+      lineStyle: Desmos.Styles.SOLID
+    });
+  }
 }
 </script>
 

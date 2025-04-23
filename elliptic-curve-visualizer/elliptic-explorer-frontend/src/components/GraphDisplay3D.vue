@@ -1,147 +1,161 @@
 <template>
-  <div id="ellipticCurveGraph" style="width: 100vw; height: 100vh;"></div>
+  <div id="threeDView" class="three-container"></div>
 </template>
 
-<script>
+<script setup>
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { onMounted, watch } from "vue";
 import { useCurveStore } from "@/stores/curveStore";
-import { watch, onMounted } from "vue";
 
-export default {
-  setup() {
-    const store = useCurveStore();
+const store = useCurveStore();
+let container, scene, camera, renderer, controls;
+let mesh = null;
 
-    watch(() => [store.curveType, store.a, store.b, store.d], () => {
-      updateGraph();
-    });
+const initThree = () => {
+  container = document.getElementById("threeDView");
+  if (!container) return;
 
-    let container = null;
-    let scene, camera, renderer, controls;
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xffffff);
 
-    const initThreeJS = () => {
-      container = document.getElementById("ellipticCurveGraph");
-      if (!container) return;
+  camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+  camera.position.set(0, 0, 15);
 
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(0xffffff);
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  container.appendChild(renderer.domElement);
 
-      camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-      camera.position.set(0, 5, 10);
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
 
-      renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(container.clientWidth, container.clientHeight);
-      container.appendChild(renderer.domElement);
+  scene.add(new THREE.AxesHelper(5));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+  dirLight.position.set(5, 10, 7);
+  scene.add(dirLight);
 
-      controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-
-      const axesHelper = new THREE.AxesHelper(5);
-      scene.add(axesHelper);
-
-      const ambientLight = new THREE.AmbientLight(0x404040);
-      scene.add(ambientLight);
-      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-      directionalLight.position.set(1, 1, 1);
-      scene.add(directionalLight);
-
-      animate();
-    };
-
-    const animate = () => {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    };
-
-    const getEquation = () => {
-      const { curveType, a, b, d } = store;
-      switch (curveType) {
-        case "weierstrass":
-          return `x ** 3 + ${a} * x + ${b}`;
-        case "edwards":
-          return `(1 - x ** 2) / (1 - ${d} * x ** 2)`;
-        case "montgomery":
-          return `x ** 3 + ${a} * x ** 2 + ${b} * x`;
-        default:
-          return "x ** 3 - x + 1";
-      }
-    };
-
-    const updateGraph = () => {
-      if (!container) return;
-      while (container.firstChild) container.removeChild(container.firstChild);
-      initThreeJS();
-      addCurve(getEquation());
-    };
-
-    const addCurve = (equation) => {
-      const surfaces = generateSurfaces(equation);
-      surfaces.forEach((surface) => scene.add(surface));
-    };
-
-    const generateSurfaces = (equation) => {
-      const surfaces = [];
-      const zRange = 5;
-      const resolution = 1000;
-      const zSteps = 20;
-      const xMin = -5, xMax = 5;
-
-      [1, -1].forEach((sign) => {
-        const geometry = new THREE.BufferGeometry();
-        const vertices = [];
-        const validPoints = [];
-
-        for (let j = 0; j <= zSteps; j++) {
-          const z = (j / zSteps) * zRange - zRange / 2;
-
-          for (let i = 0; i <= resolution; i++) {
-            const x = (i / resolution) * (xMax - xMin) + xMin;
-            try {
-              const ySquared = eval(equation.replace(/x/g, `(${x})`));
-              const y = sign * Math.sqrt(ySquared);
-              vertices.push(x, y, z);
-              validPoints.push(true);
-            } catch (error) {
-              console.error("Erreur lors de l'évaluation de l'équation :", error);
-            }
-          }
-        }
-
-        const indices = [];
-        for (let j = 0; j < zSteps; j++) {
-          for (let i = 0; i < resolution; i++) {
-            const a = j * (resolution + 1) + i;
-            const b = a + 1;
-            const c = a + (resolution + 1);
-            const d = c + 1;
-
-            if (validPoints[a] && validPoints[b] && validPoints[c]) {
-              indices.push(a, b, c);
-            }
-            if (validPoints[b] && validPoints[d] && validPoints[c]) {
-              indices.push(b, d, c);
-            }
-          }
-        }
-
-        geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
-        geometry.setIndex(indices);
-        geometry.computeVertexNormals();
-
-        const material = new THREE.MeshStandardMaterial({ color: 0x8b0000, side: THREE.DoubleSide });
-        surfaces.push(new THREE.Mesh(geometry, material));
-      });
-
-      return surfaces;
-    };
-
-    onMounted(() => {
-      initThreeJS();
-      addCurve(getEquation());
-    });
-
-    return {};
-  },
+  animate();
+  renderSurface3D();
 };
+
+const animate = () => {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+};
+
+const renderSurface3D = () => {
+  if (!scene) return;
+
+  if (mesh) {
+    scene.remove(mesh);
+    mesh.geometry.dispose();
+    mesh.material.dispose();
+    mesh = null;
+  }
+
+  if (store.field !== "real") return;
+  const data = store.graph3D;
+  if (!data || data.length === 0) return;
+
+  const zSet = [...new Set(data.map(p => p.z))].sort((a, b) => a - b);
+  const zStepCount = zSet.length;
+  const xStepCount = data.length / zStepCount;
+
+  const positions = [];
+  const indices = [];
+
+  for (let i = 0; i < data.length; i++) {
+    positions.push(data[i].x, data[i].y, data[i].z);
+  }
+
+  const isValid = (...pts) =>
+    pts.every(
+      pt =>
+        pt &&
+        isFinite(pt.x) &&
+        isFinite(pt.y) &&
+        isFinite(pt.z)
+    );
+
+  const dist3D = (p1, p2) =>
+    Math.sqrt(
+      (p1.x - p2.x) ** 2 +
+      (p1.y - p2.y) ** 2 +
+      (p1.z - p2.z) ** 2
+    );
+
+  const maxDist = 1.2;
+  const maxYDiff = 5;
+
+  for (let j = 0; j < zStepCount - 1; j++) {
+    for (let i = 0; i < xStepCount - 1; i++) {
+      const index = j * xStepCount + i;
+      const a = index;
+      const b = index + 1;
+      const c = index + xStepCount;
+      const d = c + 1;
+
+      const A = data[a], B = data[b], C = data[c], D = data[d];
+
+      if (isValid(A, B, C)) {
+        const dAB = dist3D(A, B);
+        const dAC = dist3D(A, C);
+        if (
+          dAB < maxDist &&
+          dAC < maxDist &&
+          Math.abs(A.y - B.y) < maxYDiff &&
+          Math.abs(A.y - C.y) < maxYDiff
+        ) {
+          indices.push(a, c, b);
+        }
+      }
+
+      if (isValid(B, C, D)) {
+        const dBC = dist3D(B, C);
+        const dBD = dist3D(B, D);
+        if (
+          dBC < maxDist &&
+          dBD < maxDist &&
+          Math.abs(B.y - C.y) < maxYDiff &&
+          Math.abs(B.y - D.y) < maxYDiff
+        ) {
+          indices.push(b, c, d);
+        }
+      }
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+
+  const material = new THREE.MeshStandardMaterial({color: 0x00bcd4, side: THREE.DoubleSide, flatShading: true});
+
+  mesh = new THREE.Mesh(geometry, material);
+  scene.add(mesh);
+};
+
+
+watch(
+  () => [store.graph3D, store.field],
+  () => {
+    renderSurface3D();
+  },
+  { deep: true }
+);
+
+onMounted(() => {
+  initThree();
+});
 </script>
+
+<style scoped>
+.three-container {
+  width: 100%;
+  height: 100%;
+  border: 1px solid #ccc;
+}
+</style>
