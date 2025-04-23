@@ -1,6 +1,6 @@
 /**
- * This file defines the API routes for handling elliptic curve computations.
- * It includes validation middleware and routes for computing curve points.
+ * Définition des routes pour les calculs de courbes elliptiques.
+ * Utilise un middleware de validation pour sécuriser les entrées.
  */
 
 const express = require("express");
@@ -9,7 +9,7 @@ const { body, validationResult } = require("express-validator");
 
 const router = express.Router();
 
-// Middleware for validating incoming requests
+// Middleware de validation des champs
 const validateRequest = (validations) => {
   return async (req, res, next) => {
     await Promise.all(validations.map(v => v.run(req)));
@@ -19,7 +19,7 @@ const validateRequest = (validations) => {
   };
 };
 
-// Route for computing elliptic curve points
+// Route principale : POST /api/curves/compute
 router.post(
   "/compute",
   validateRequest([
@@ -31,9 +31,7 @@ router.post(
     body("p").optional().isInt({ min: 2 }),
     body("xMin").isNumeric(),
     body("xMax").isNumeric(),
-    body("resolution").isInt({ min: 10 }),
-    body("zDepth").isNumeric(),
-    body("zSteps").isInt({ min: 1 })
+    body("resolution").isInt({ min: 10 })
   ]),
   computeCurve
 );

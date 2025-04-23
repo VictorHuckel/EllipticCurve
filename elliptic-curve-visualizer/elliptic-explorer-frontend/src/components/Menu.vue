@@ -17,133 +17,47 @@
 
     <!-- Paramètres principaux -->
     <div class="form-section">
-  <!-- Coefficient a -->
-  <label v-if="requires('a')" for="input-a">a&nbsp;:</label>
-  <input
-    v-if="requires('a')"
-    id="input-a"
-    v-model.number="store.a"
-    type="number"
-    step="any"
-    aria-label="Coefficient a"
-    placeholder="Valeur de a"
-  />
+      <label v-if="requires('a')" for="input-a">a :</label>
+      <input v-if="requires('a')" id="input-a" v-model.number="store.a" type="number" step="any" placeholder="a" />
 
-  <!-- Coefficient b -->
-  <label v-if="requires('b')" for="input-b">b&nbsp;:</label>
-  <input
-    v-if="requires('b')"
-    id="input-b"
-    v-model.number="store.b"
-    type="number"
-    step="any"
-    aria-label="Coefficient b"
-    placeholder="Valeur de b"
-  />
+      <label v-if="requires('b')" for="input-b">b :</label>
+      <input v-if="requires('b')" id="input-b" v-model.number="store.b" type="number" step="any" placeholder="b" />
 
-  <!-- Coefficient d -->
-  <label v-if="requires('d')" for="input-d">d&nbsp;:</label>
-  <input
-    v-if="requires('d')"
-    id="input-d"
-    v-model.number="store.d"
-    type="number"
-    step="any"
-    aria-label="Coefficient d"
-    placeholder="Valeur de d"
-  />
+      <label v-if="requires('d')" for="input-d">d :</label>
+      <input v-if="requires('d')" id="input-d" v-model.number="store.d" type="number" step="any" placeholder="d" />
 
-  <!-- Modulo p -->
-  <label v-if="fieldType === 'modulo'" for="input-p">Modulo p&nbsp;:</label>
-  <input
-    v-if="fieldType === 'modulo'"
-    id="input-p"
-    v-model.number="store.p"
-    type="number"
-    min="2"
-    step="1"
-    aria-label="Modulo p"
-    placeholder="Modulo p"
-  />
-</div>
-    <!-- Vues -->
+      <label v-if="fieldType === 'modulo'" for="input-p">Modulo p :</label>
+      <input v-if="fieldType === 'modulo'" id="input-p" v-model.number="store.p" type="number" min="2" step="1" placeholder="p" />
+    </div>
+
+    <!-- Vues à afficher -->
     <div class="views-selection">
       <label>Vues à afficher :</label>
       <div v-for="view in filteredViews" :key="view.key">
-        <input
-          type="checkbox"
-          :id="view.key"
-          :value="view.key"
-          v-model="activeViews"
-          @change="emitViews"
-        />
+        <input type="checkbox" :id="view.key" :value="view.key" v-model="activeViews" @change="emitViews" />
         <label :for="view.key">{{ view.label }}</label>
       </div>
     </div>
 
-    <!-- Paramètres avancés (dépliables) -->
+    <!-- Paramètres avancés -->
     <details class="advanced-settings">
-  <summary>Paramètres avancés</summary>
+      <summary>Paramètres avancés</summary>
+      <label for="input-xMin">xMin :</label>
+      <input id="input-xMin" v-model.number="store.xMin" type="number" step="any" placeholder="xMin" />
 
-  <label for="input-xMin">xMin&nbsp;:</label>
-  <input
-    id="input-xMin"
-    v-model.number="store.xMin"
-    type="number"
-    step="any"
-    aria-label="Valeur minimale de x"
-    placeholder="xMin"
-  />
+      <label for="input-xMax">xMax :</label>
+      <input id="input-xMax" v-model.number="store.xMax" type="number" step="any" placeholder="xMax" />
 
-  <label for="input-xMax">xMax&nbsp;:</label>
-  <input
-    id="input-xMax"
-    v-model.number="store.xMax"
-    type="number"
-    step="any"
-    aria-label="Valeur maximale de x"
-    placeholder="xMax"
-  />
+      <label for="input-resolution">Résolution :</label>
+      <input id="input-resolution" v-model.number="store.resolution" type="number" min="10" step="1" placeholder="Résolution" />
+    </details>
 
-  <label for="input-resolution">Résolution (x)&nbsp;:</label>
-  <input
-    id="input-resolution"
-    v-model.number="store.resolution"
-    type="number"
-    min="10"
-    step="1"
-    aria-label="Nombre de points pour la résolution"
-    placeholder="Résolution"
-  />
-
-  <label for="input-zDepth">zDepth&nbsp;:</label>
-  <input
-    id="input-zDepth"
-    v-model.number="store.zDepth"
-    type="number"
-    step="any"
-    aria-label="Profondeur en z"
-    placeholder="zDepth"
-  />
-
-  <label for="input-zSteps">zSteps&nbsp;:</label>
-  <input
-    id="input-zSteps"
-    v-model.number="store.zSteps"
-    type="number"
-    min="1"
-    step="1"
-    aria-label="Nombre d’étapes z"
-    placeholder="zSteps"
-  />
-</details>
-
-    <!-- Résultat / Erreur / Chargement -->
+    <!-- Résultats / erreurs -->
     <p v-if="store.result !== null" class="result">Résultat : y = {{ store.result }}</p>
     <p v-if="store.errorMessage" class="error">Erreur : {{ store.errorMessage }}</p>
     <p v-if="store.loading" class="loading">Chargement en cours...</p>
 
-    <!-- Other menu items -->
+    <!-- Bouton wireframe -->
     <button @click="toggleWireframe">Toggle Wireframe</button>
   </div>
 </template>
@@ -157,9 +71,9 @@ const store = useCurveStore();
 const selectedCurve = ref(store.curveType);
 const fieldType = ref(store.field);
 const emit = defineEmits(["viewsChanged"]);
-const debounceDelay = 300;
 let timer = null;
 
+// Toutes les vues possibles
 const allViews = [
   { key: "2D", label: "Graphique 2D" },
   { key: "2DHomogeneous", label: "Graphique 2D équation Homogène" },
@@ -167,17 +81,16 @@ const allViews = [
   { key: "Sphere", label: "Sphère" }
 ];
 
+// Vues filtrées selon le champ
 const filteredViews = computed(() => {
-  if (fieldType.value === "real") {
-    return allViews.filter(v => v.key !== "Torus");
-  } else if (fieldType.value === "modulo") {
-    return allViews.filter(v => v.key !== "3D" && v.key !== "Sphere" && v.key !== "2DHomogeneous");
-  }
+  if (fieldType.value === "real") return allViews.filter(v => v.key !== "Torus");
+  if (fieldType.value === "modulo") return allViews.filter(v => v.key !== "3D" && v.key !== "Sphere" && v.key !== "2DHomogeneous");
   return allViews;
 });
 
 const activeViews = ref([]);
 
+// Mise à jour des vues autorisées
 function updateActiveViews() {
   const allowed = filteredViews.value.map(v => v.key);
   activeViews.value = activeViews.value.filter(v => allowed.includes(v));
@@ -189,16 +102,12 @@ function updateActiveViews() {
   emitViews();
 }
 
+// Notification des vues au parent
 function emitViews() {
   emit("viewsChanged", [...activeViews.value]);
 }
 
-watch(selectedCurve, val => store.curveType = val);
-watch(fieldType, val => {
-  store.field = val;
-  updateActiveViews();
-});
-
+// Paramètres nécessaires selon le type de courbe
 function requires(param) {
   const t = selectedCurve.value;
   if (param === "a" || param === "b") return t === "weierstrass" || t === "montgomery";
@@ -206,13 +115,15 @@ function requires(param) {
   return false;
 }
 
+// Lancer le calcul après délai
 function scheduleCompute() {
   clearTimeout(timer);
   timer = setTimeout(() => {
     computeBackend();
-  }, debounceDelay);
+  }, 300);
 }
 
+// Appel à l'API backend
 async function computeBackend() {
   store.errorMessage = "";
   store.result = null;
@@ -227,28 +138,27 @@ async function computeBackend() {
     p: fieldType.value === "modulo" ? store.p : undefined,
     xMin: store.xMin,
     xMax: store.xMax,
-    resolution: store.resolution,
-    zDepth: store.zDepth,
-    zSteps: store.zSteps
+    resolution: store.resolution
   };
 
   try {
     const res = await axios.post("http://localhost:5000/api/curves/compute", payload);
-    console.log("API compute response:", res.data)
-    
+    console.log("API response:", res.data);
 
+    const {
+      points2D,
+      homogeneousPoints2D,
+      torus,
+      sphere,
+      polePoints2D
+    } = res.data;
 
-
-    const { points2D, homogeneousPoints2D, points3D, torus, sphere, polePoints2D } = res.data;
-
-    console.log("polePoints2D from API:", polePoints2D);
-    
     store.graph2D = points2D || [];
     store.homogeneousGraph2D = homogeneousPoints2D || [];
-    store.graph3D = points3D || [];
     store.torusRaw = torus || [];
-    store.poleGraph2D = polePoints2D || [];
     store.sphereRaw = sphere || [];
+    store.poleGraph2D = polePoints2D || [];
+
     store.result = points2D?.[0]?.y?.toFixed(5) || null;
   } catch (e) {
     store.errorMessage = e.response?.data?.error || e.message || "Erreur serveur.";
@@ -257,6 +167,7 @@ async function computeBackend() {
   }
 }
 
+// Suivre les changements de paramètres
 watch([
   selectedCurve,
   fieldType,
@@ -266,10 +177,14 @@ watch([
   () => store.p,
   () => store.xMin,
   () => store.xMax,
-  () => store.resolution,
-  () => store.zDepth,
-  () => store.zSteps
+  () => store.resolution
 ], scheduleCompute, { deep: true });
+
+watch(selectedCurve, val => store.curveType = val);
+watch(fieldType, val => {
+  store.field = val;
+  updateActiveViews();
+});
 
 onMounted(() => {
   updateActiveViews();
@@ -289,69 +204,28 @@ function toggleWireframe() {
   padding: 1rem;
   max-width: 350px;
 }
-
 input, select {
   padding: 0.4rem;
   font-size: 1rem;
   width: 100%;
 }
-
-label {
-  font-weight: bold;
-}
-
-.form-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.field-selection {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.views-selection {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  margin-top: 0.5rem;
-}
-
-.advanced-settings {
-  margin-top: 1rem;
-  border-top: 1px solid #ccc;
-  padding-top: 0.5rem;
-}
-
-.result {
-  color: rgb(255, 0, 0);
-  font-weight: bold;
-}
-
-.error {
-  color: red;
-}
-
-.loading {
-  color: #666;
-  font-style: italic;
-}
-
+label { font-weight: bold; }
+.form-section { display: flex; flex-direction: column; gap: 0.4rem; }
+.field-selection { display: flex; gap: 1rem; align-items: center; }
+.views-selection { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.5rem; }
+.advanced-settings { margin-top: 1rem; border-top: 1px solid #ccc; padding-top: 0.5rem; }
+.result { color: rgb(255, 0, 0); font-weight: bold; }
+.error { color: red; }
+.loading { color: #666; font-style: italic; }
 .toggle-wireframe-btn {
-  background-color: #000000; /* Couleur de fond */
-  color: white; /* Couleur du texte */
-  border: none; /* Supprime les bordures */
-  border-radius: px; /* Arrondi des coins */
-  padding: 0.8rem 1.5rem; /* Taille du bouton */
-  font-size: 1.2rem; /* Taille de la police */
-  font-family: 'Arial', sans-serif; /* Police d'écriture */
-  cursor: pointer; /* Curseur en mode clic */
-  transition: background-color 0.3s ease; /* Animation pour le survol */
+  background-color: #000000;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  font-size: 1.2rem;
+  font-family: 'Arial', sans-serif;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
-
-.toggle-wireframe-btn:hover {
-  background-color: #0056b3; /* Couleur de fond au survol */
-}
+.toggle-wireframe-btn:hover { background-color: #0056b3; }
 </style>

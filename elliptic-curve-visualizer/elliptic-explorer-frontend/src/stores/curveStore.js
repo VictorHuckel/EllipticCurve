@@ -2,76 +2,55 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 
 export const useCurveStore = defineStore("curveStore", () => {
-  const curveType = ref("weierstrass");  // "weierstrass", "montgomery", "edwards"
-  const field = ref("real");             // "real" ou "modulo"
-  const method = ref("explicit");        // "explicit" ou "parametric"
+  // Type de courbe et champ
+  const curveType = ref("weierstrass");
+  const field = ref("real");
 
-  // Ajoutez un computed pour la version homogénéisée
+  // Version homogénéisée automatiquement dérivée
   const homogeneousCurveType = computed(() => {
     switch (curveType.value) {
-      case "weierstrass":
-        return "weierstrass_homogeneous";
-      case "montgomery":
-        return "montgomery_homogeneous";
-      case "edwards":
-        return "edwards_homogeneous";
-      default:
-        return null;
+      case "weierstrass": return "weierstrass_homogeneous";
+      case "montgomery": return "montgomery_homogeneous";
+      case "edwards": return "edwards_homogeneous";
+      default: return null;
     }
   });
-  const wireframeMode = ref(false); // State to track wireframe mode
 
-  function toggleWireframe() {
-    wireframeMode.value = !wireframeMode.value;
-  }
-  // Coefficients
+  // Coefficients selon la courbe
   const a = ref(1);
   const b = ref(1);
   const d = ref(1);
-  const p = ref(7); // pour le mode modulo
+  const p = ref(7); // champ modulo
 
-  // Paramètre unique pour la résolution ponctuelle (si nécessaire)
-  const x = ref(0);
-
-  // Paramètres d'échantillonnage (mode réel)
+  // Domaine pour le champ réel
   const xMin = ref(-5);
   const xMax = ref(5);
   const resolution = ref(2000);
 
-  // Paramètres d’extrusion 3D
-  const zDepth = ref(5);
-  const zSteps = ref(20);
-
-  // Paramètres de courbe paramétrique
-  const tMin = ref(-Math.PI);
-  const tMax = ref(Math.PI);
-  const tSteps = ref(500);
-
   // Résultats du backend
   const loading = ref(false);
   const errorMessage = ref("");
-  const result = ref(null); // pour le point y(x)
+  const result = ref(null);
+
   const graph2D = ref([]);
   const homogeneousGraph2D = ref([]);
-  const graph3D = ref([]);
   const torusRaw = ref([]);
   const sphereRaw = ref([]);
+  const poleGraph2D = ref([]);
 
-  // Synthèse selon le mode actif
+  // Vues selon le champ actif
   const viewsData = computed(() => ({
     graph2D: graph2D.value,
     homogeneousGraph2D: homogeneousGraph2D.value,
-    graph3D: graph3D.value,
     torus: field.value === "modulo" ? torusRaw.value : [],
     sphere: field.value === "modulo" ? sphereRaw.value : []
   }));
 
-  // Champs nécessaires selon la courbe
+  // Champs requis selon la courbe
   const curveFields = computed(() => {
     switch (curveType.value) {
       case "weierstrass":
       case "weierstrass_homogeneous":
-        return ["a", "b"];
       case "montgomery":
       case "montgomery_homogeneous":
         return ["a", "b"];
@@ -83,45 +62,41 @@ export const useCurveStore = defineStore("curveStore", () => {
     }
   });
 
+  // Mode wireframe
+  const wireframeMode = ref(false);
+  function toggleWireframe() {
+    wireframeMode.value = !wireframeMode.value;
+  }
+
   return {
-    // Courbe et méthode
+    // Type
     curveType,
-    homogeneousCurveType, // Exposez la version homogénéisée
     field,
-    method,
+    homogeneousCurveType,
 
     // Coefficients
     a, b, d, p,
 
-    // Résolution d’un point
-    x,
-
-    // Domaines et extrusions
+    // Domaine
     xMin,
     xMax,
     resolution,
-    zDepth,
-    zSteps,
-
-    // Paramétrique
-    tMin,
-    tMax,
-    tSteps,
 
     // Résultats
     loading,
-    result,
     errorMessage,
+    result,
     graph2D,
     homogeneousGraph2D,
-    graph3D,
     torusRaw,
     sphereRaw,
+    poleGraph2D,
 
-    // Synthèse
+    // Vue calculée
     viewsData,
     curveFields,
 
+    // Autres
     wireframeMode,
     toggleWireframe
   };

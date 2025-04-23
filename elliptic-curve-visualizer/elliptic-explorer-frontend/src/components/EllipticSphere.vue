@@ -14,22 +14,20 @@ export default defineComponent({
     point: {
       type: Object,
       required: true,
-      default: () => ({ x: null, y: null }), // Valeur par défaut
+      default: () => ({ x: null, y: null }),
     },
   },
   setup(props) {
-    console.log("Props received in EllipticSphere:", props.point);
     const store = useCurveStore();
 
     let container, scene, camera, renderer, controls;
     let sphereWire = null;
-    let realLineMesh = null;
-    let homoLineMesh = null;
     let pointsMesh = null;
     let selectedPointMesh = null;
 
     const R = 3;
 
+    // Initialisation de la scène Three.js
     function initThreeJS() {
       container = document.getElementById("ellipticSphere");
       if (!container) return;
@@ -39,6 +37,7 @@ export default defineComponent({
 
       const width = container.clientWidth;
       const height = container.clientHeight;
+
       camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
       camera.position.set(8, 6, 8);
 
@@ -59,7 +58,7 @@ export default defineComponent({
       const sphereGeom = new THREE.SphereGeometry(R, 32, 32);
       const sphereMat = new THREE.MeshBasicMaterial({
         color: 0xdddddd,
-        wireframe: store.wireframeMode, // Set initial wireframe mode
+        wireframe: store.wireframeMode,
       });
       sphereWire = new THREE.Mesh(sphereGeom, sphereMat);
       scene.add(sphereWire);
@@ -74,16 +73,8 @@ export default defineComponent({
       renderer.render(scene, camera);
     }
 
+    // Supprime les anciens points de courbe et sélection
     function clearMeshes() {
-      [realLineMesh, homoLineMesh].forEach(m => {
-        if (m) {
-          scene.remove(m);
-          m.geometry.dispose();
-          m.material.dispose();
-        }
-      });
-      realLineMesh = homoLineMesh = null;
-
       if (pointsMesh) {
         scene.remove(pointsMesh);
         pointsMesh.geometry.dispose();
@@ -101,131 +92,79 @@ export default defineComponent({
       }
     }
 
-    function addSelectedPointToSphere(x, y) {
+    // Ajout d'un point sélectionné (ex: utilisateur clique sur un point)
+    function addSelectedPointToSphere(x, y, z = 1) {
       if (!scene) return;
-
-      const pointOnSphere = projectiveToSphere(x, y, 1);
-
+      const point = new THREE.Vector3(x, y, z);
       const geometry = new THREE.SphereGeometry(0.1, 16, 16);
       const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
       selectedPointMesh = new THREE.Mesh(geometry, material);
-
-      selectedPointMesh.position.copy(pointOnSphere);
-
+      selectedPointMesh.position.copy(point);
       scene.add(selectedPointMesh);
     }
 
-    function projectiveToSphere(X, Y, Z) {
-      const norm = Math.sqrt(X * X + Y * Y + Z * Z);
-      return new THREE.Vector3(R * X / norm, R * Y / norm, R * Z / norm);
-    }
+    // Construction de la courbe projetée (points depuis le backend)
+    function buildSphereCurve() {
+      const spherePoints = store.sphereRaw || [];
+      if (!spherePoints.length) return;
 
-    function buildLineReal() {
-      const rawPoints = store.graph2D || [];
-      if (rawPoints.length < 2) return;
-
-      const vectors = [];
-
-      for (const { x, y } of rawPoints) {
-        const P1 = projectiveToSphere(x, y, 1);
-        const S1 = projectiveToSphere(-x, -y, -1);
-        vectors.push(P1, S1);
-      }
-
-      const geometry = new THREE.BufferGeometry().setFromPoints(vectors);
-      const material = new THREE.PointsMaterial({ color: 0x0000ff, size: 0.05 });
-      realLineMesh = new THREE.Points(geometry, material);
-      scene.add(realLineMesh);
-    }
-
-    function buildHomogeneousCurve() {
-      const rawPoints = store.homogeneousGraph2D || [];
-      if (rawPoints.length < 2) return;
-
-      const vectors = [];
-
-      for (const { X, Y, Z } of rawPoints) {
-        const P = projectiveToSphere(X, Y, Z);
-        const S = projectiveToSphere(-X, -Y, -Z);
-        vectors.push(P, S);
-      }
-
-      const geometry = new THREE.BufferGeometry().setFromPoints(vectors);
-      const material = new THREE.PointsMaterial({ color: 0x0000ff, size: 0.05 });
-      homoLineMesh = new THREE.Points(geometry, material);
-      scene.add(homoLineMesh);
-    }
-
-    function buildPointsModulo() {
-      const arr = store.sphereRaw || [];
-      if (!arr.length) return;
       const positions = [];
-      for (const pt of arr) {
-        positions.push(pt.x, pt.y, pt.z);
+      for (const { x, y, z } of spherePoints) {
+        positions.push(x, y, z);
       }
+
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-      const material = new THREE.PointsMaterial({ color: 0xff0000, size: 0.06 });
+      const material = new THREE.PointsMaterial({ color: 0x0000ff, size: 0.05 });
       pointsMesh = new THREE.Points(geometry, material);
       scene.add(pointsMesh);
     }
 
+    // Met à jour la sphère selon le champ
     function updateSphere() {
       if (!scene) return;
       clearMeshes();
 
       if (store.field === "real") {
-        if (store.curveType === "edwards") {
-          buildLineReal();
-        } else {
-          buildLineReal();
-          buildHomogeneousCurve();
-        }
-      } else if (store.field === "modulo") {
-        buildPointsModulo();
+        buildSphereCurve(); // on affiche seulement la projection réelle
       }
     }
 
-    watch(
-      () => store.wireframeMode,
-      (newVal) => {
-        if (sphereWire) {
-          sphereWire.material.wireframe = newVal;
-        }
+    // Mise à jour du mode wireframe
+    watch(() => store.wireframeMode, (newVal) => {
+      if (sphereWire) sphereWire.material.wireframe = newVal;
+    });
+
+    // Affichage du point sélectionné
+    watch(() => props.point, (newPoint) => {
+      if (newPoint && typeof newPoint.x === "number" && typeof newPoint.y === "number") {
+        clearSelectedPointMesh();
+        addSelectedPointToSphere(newPoint.x, newPoint.y);
       }
-    );
+    }, { immediate: true });
 
-    watch(
-      () => props.point,
-      (newPoint) => {
-        console.log("New point received:", newPoint);
-        if (newPoint && typeof newPoint.x === "number" && typeof newPoint.y === "number") {
-          clearSelectedPointMesh();
-          addSelectedPointToSphere(newPoint.x, newPoint.y);
-        }
-      },
-      { immediate: true }
-    );
-
+    // Chargement initial
     onMounted(() => {
       initThreeJS();
     });
 
+    // Actualisation à chaque changement de courbe
     watch(
-      () => [store.field, store.graph2D, store.homogeneousGraph2D, store.sphereRaw],
+      () => [store.field, store.sphereRaw],
       () => {
         updateSphere();
       },
       { deep: true, immediate: true }
     );
 
+    // Nettoyage à la destruction
     onUnmounted(() => {
       renderer.dispose();
       controls.dispose();
     });
 
     return {};
-  },
+  }
 });
 </script>
 

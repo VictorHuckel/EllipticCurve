@@ -1,12 +1,13 @@
-/**
- * Projette un point (x, y) en champ fini Z/pZ sur un tore 3D.
- * - theta = 2π x / p
- * - phi   = 2π y / p
- * Coordonnées : 
- *   X = (R + r cos(phi)) cos(theta)
- *   Y = (R + r cos(phi)) sin(theta)
- *   Z = r sin(phi)
- */
+function projectiveToSphere(X, Y, Z, R = 3) {
+  const norm = Math.sqrt(X * X + Y * Y + Z * Z);
+  if (norm < 1e-8) return null;
+  return {
+    x: R * X / norm,
+    y: R * Y / norm,
+    z: R * Z / norm
+  };
+}
+
 function projectTorus(x, y, p) {
   const R = 3;
   const r = 1;
@@ -19,29 +20,19 @@ function projectTorus(x, y, p) {
 
   return { x: X, y: Y, z: Z };
 }
-
-/**
- * Projette un point (x, y) en champ fini Z/pZ sur une sphère 3D.
- * - theta = 2π x / p
- * - phi   = 2π y / p
- * Coordonnées sphériques classiques :
- *   X = R sin(phi) cos(theta)
- *   Y = R sin(phi) sin(theta)
- *   Z = R cos(phi)
- */
 function projectSphere(x, y, p) {
-  const R = 3;
   const theta = (2 * Math.PI * x) / p;
   const phi = (2 * Math.PI * y) / p;
-
-  const X = R * Math.sin(phi) * Math.cos(theta);
-  const Y = R * Math.sin(phi) * Math.sin(theta);
-  const Z = R * Math.cos(phi);
-
-  return { x: X, y: Y, z: Z };
+  const R = 3;
+  return {
+    x: R * Math.sin(phi) * Math.cos(theta),
+    y: R * Math.sin(phi) * Math.sin(theta),
+    z: R * Math.cos(phi)
+  };
 }
 
 module.exports = {
+  projectiveToSphere,
   projectTorus,
   projectSphere
 };
