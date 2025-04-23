@@ -120,7 +120,7 @@ function renderHomogeneousCurve() {
       latex = `y = x^3 + ${a}x^2y + ${b}xy^2`;
       break;
     case "edwards":
-      latex = `x^2 + y^2 = y^2 + ${d}x^2y^2`;
+      latex = `x^2y^2 + y^2 = y^4 + ${d}x^2`;
       break;
   }
 
