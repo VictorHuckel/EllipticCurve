@@ -93,15 +93,33 @@ export default defineComponent({
     }
 
     // Ajout d'un point sélectionné (ex: utilisateur clique sur un point)
-    function addSelectedPointToSphere(x, y, z = 1) {
-      if (!scene) return;
-      const point = new THREE.Vector3(x, y, z);
-      const geometry = new THREE.SphereGeometry(0.1, 16, 16);
-      const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-      selectedPointMesh = new THREE.Mesh(geometry, material);
-      selectedPointMesh.position.copy(point);
-      scene.add(selectedPointMesh);
-    }
+    async function addSelectedPointToSphere(x, y, z = 1) {
+  if (!scene) return;
+
+  try {
+    const res = await fetch("http://localhost:5000/api/curves/project/point", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ x, y, z }),
+    });
+
+    if (!res.ok) throw new Error("Projection failed");
+
+    const { x: px, y: py, z: pz } = await res.json();
+
+    const point = new THREE.Vector3(px, py, pz);
+    const geometry = new THREE.SphereGeometry(0.1, 16, 16);
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+
+    selectedPointMesh = new THREE.Mesh(geometry, material);
+    selectedPointMesh.position.copy(point);
+    scene.add(selectedPointMesh);
+
+  } catch (err) {
+    console.error("Erreur projection point:", err);
+  }
+}
+
 
     // Construction de la courbe projetée (points depuis le backend)
     function buildSphereCurve() {

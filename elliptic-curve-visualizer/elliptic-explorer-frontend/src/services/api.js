@@ -18,3 +18,20 @@ export async function computeCurve(params) {
     throw error;
   }
 }
+
+
+
+/**
+ * Envoie un point (x, y, z) au backend pour projection sur la sphère.
+ * @param {Object} point - Le point { x, y, z } à projeter (z par défaut à 1)
+ * @returns {Object} - Le point projeté { x, y, z } sur la sphère
+ */
+export async function projectPointToSphere(point) {
+  try {
+    const response = await axios.post("http://localhost:5000/api/project/point", point);
+    return response.data;
+  } catch (error) {
+    console.error("Erreur lors de la projection du point :", error);
+    throw error;
+  }
+}

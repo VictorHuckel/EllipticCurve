@@ -5,6 +5,16 @@
  */
 
 const { generateCurvePoints } = require("../services/curveEngine");
+const { projectiveToSphere } = require("../services/projection");
+
+const projectPoint = (req, res) => {
+  const { x, y, z = 1 } = req.body;
+  const projected = projectiveToSphere(x, y, z);
+  if (!projected) return res.status(400).json({ error: "Invalid point" });
+  return res.json(projected);
+};
+
+
 
 function computeCurve(req, res) {
   try {
@@ -44,5 +54,6 @@ function computeCurve(req, res) {
 }
 
 module.exports = {
-  computeCurve
+  computeCurve,
+  projectPoint
 };

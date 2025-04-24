@@ -4,8 +4,9 @@
  */
 
 const express = require("express");
-const { computeCurve } = require("../controllers/curveController");
+const { computeCurve, projectPoint } = require("../controllers/curveController");
 const { body, validationResult } = require("express-validator");
+
 
 const router = express.Router();
 
@@ -35,5 +36,11 @@ router.post(
   ]),
   computeCurve
 );
+
+// Projection d'un point (x, y, z) sur la sphère
+
+
+router.post("/project/point", projectPoint);
+
 
 module.exports = router;
