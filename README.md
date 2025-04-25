@@ -1,5 +1,9 @@
 # Elliptic Curve Visualizer
 
+
+https://github.com/user-attachments/assets/e7db511d-cdff-4ddd-babb-48b38326f425
+
+
 ## Description
 
 Ce projet est une application web permettant de visualiser des courbes elliptiques et d'effectuer différentes opérations dessus. Il est développé en **Vue.js** pour l'interface utilisateur et utilise un serveur **Node.js avec Express** pour effectuer les calculs mathématiques.
