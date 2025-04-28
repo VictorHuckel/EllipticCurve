@@ -9,6 +9,8 @@ Ce projet est une application web permettant de visualiser des courbes elliptiqu
 
 ![aperçu](./client/public/preview.png)
 
+https://github.com/user-attachments/assets/e7db511d-cdff-4ddd-babb-48b38326f425
+
 
 ## Fonctionnalités
 
